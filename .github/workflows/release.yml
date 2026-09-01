@@ -82,14 +82,14 @@ jobs:
       - name: Build archive
         run: |
           cp README.md bundle/README.md
-          (cd bundle && zip -r "../Тривога.zip" Windows Linux README.md)
+          (cd bundle && zip -r "../Tryvoha.zip" Windows Linux README.md)
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: >-
           gh release create "$RELEASE_TAG"
-          "Тривога.zip"
+          "Tryvoha.zip"
           --repo "$GITHUB_REPOSITORY"
           --target "$GITHUB_SHA"
           --title "Тривога $RELEASE_TAG"
