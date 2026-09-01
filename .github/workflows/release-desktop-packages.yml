@@ -126,10 +126,20 @@ jobs:
             exit 0
           fi
 
+          mapfile -t rpm_files < <(
+            find release-assets -type f \
+              -name 'tryvoha-desktop-1.4.0-1*.noarch.rpm' -print
+          )
+
+          if [ "${#rpm_files[@]}" -ne 1 ]; then
+            echo "Expected exactly one RPM package."
+            exit 1
+          fi
+
           gh release create v1.4.0 \
             Tryvoha.zip \
             release-assets/tryvoha-desktop_1.4.0_all.deb \
-            release-assets/tryvoha-desktop-1.4.0-1.noarch.rpm \
+            "${rpm_files[0]}" \
             --target "${GITHUB_SHA}" \
             --title "Тривога Desktop v1.4.0" \
             --notes "Додано системні пакети Тривога Desktop для Ubuntu/Debian і Fedora. ZIP із Windows та переносною Linux-версією залишається доступним. Linux-клієнт захищено від повторного запуску; системний автозапуск можна вимкнути у меню застосунку. Windows-бінарник перенесено з v1.3.9 без перескладання."
