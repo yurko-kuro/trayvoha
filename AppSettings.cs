@@ -55,7 +55,7 @@ internal static class SettingsStore
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Tryvoha");
+        "Тривога");
 
     private static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
 
@@ -64,6 +64,7 @@ internal static class SettingsStore
         get
         {
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            yield return Path.Combine(appData, "Tryvoha", "settings.json");
             yield return Path.Combine(appData, "AlertTray", "settings.json");
             yield return Path.Combine(appData, "NeptunTray", "settings.json");
         }
