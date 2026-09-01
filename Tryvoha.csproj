@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Тривога</AssemblyName>
     <RootNamespace>Tryvoha</RootNamespace>
-    <Version>1.4.4</Version>
+    <Version>1.4.5</Version>
     <Authors>yurko-kuro</Authors>
     <Description>Повітряні тривоги для вибраних районів та областей України.</Description>
     <RepositoryUrl>https://github.com/yurko-kuro/tryvoha-desktop</RepositoryUrl>
