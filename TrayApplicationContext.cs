@@ -231,7 +231,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
             UpdateStatus(state);
             CompleteManualStatus(
                 state.IsActive ? "Повітряна тривога" : "Тривоги немає",
-                BuildSelectionLines(),
+                state.IsActive ? BuildActiveAlertLines(state) : BuildSelectionLines(),
                 state.IsActive);
 
             var changed = !string.Equals(_lastFingerprint, state.Fingerprint, StringComparison.Ordinal);
@@ -307,8 +307,16 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon.ShowBalloonTip(
             8_000,
             "Повітряна тривога",
-            BuildSelectionNotification(),
+            BuildAlertNotification(state),
             ToolTipIcon.Warning);
+    }
+
+    private static string BuildAlertNotification(AlertState state)
+    {
+        return BuildActiveAlertLines(state)
+            + Environment.NewLine
+            + Environment.NewLine
+            + "Neptune";
     }
 
     private string BuildSelectionNotification()
@@ -324,6 +332,32 @@ internal sealed class TrayApplicationContext : ApplicationContext
         var lines = _settings.SelectedAreaKeys.Select(DisplayNameForSelection);
 
         return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string BuildActiveAlertLines(AlertState state)
+    {
+        var blocks = state.ActiveAreas.Select(area =>
+            DisplayNameForSelection(area.SelectionKey)
+            + Environment.NewLine
+            + "Оголошено: "
+            + FormatAlertStartTime(area.Since));
+
+        return string.Join(
+            Environment.NewLine + Environment.NewLine,
+            blocks);
+    }
+
+    private static string FormatAlertStartTime(DateTimeOffset? since)
+    {
+        if (!since.HasValue)
+        {
+            return "немає даних";
+        }
+
+        var localSince = since.Value.ToLocalTime();
+        return localSince.Date == DateTimeOffset.Now.Date
+            ? localSince.ToString("HH:mm")
+            : localSince.ToString("dd.MM, HH:mm");
     }
 
     private void UpdateSelectionSummary()

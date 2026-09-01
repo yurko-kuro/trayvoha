@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Tryvoha</AssemblyName>
     <RootNamespace>Tryvoha</RootNamespace>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <Authors>yurko-kuro</Authors>
     <Description>Air-raid alerts for selected districts and regions of Ukraine.</Description>
     <RepositoryUrl>https://github.com/yurko-kuro/tryvoha-desktop</RepositoryUrl>

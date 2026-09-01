@@ -10,6 +10,7 @@ import threading
 import unicodedata
 import urllib.request
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -63,6 +64,37 @@ def raion_key(key: str) -> str:
 
 def key_value(selection_key: str) -> str:
     return selection_key.split(":", 1)[1] if ":" in selection_key else ""
+
+
+def parse_alert_time(value: str | None) -> datetime | None:
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone()
+    except (TypeError, ValueError):
+        return None
+
+
+def format_alert_start_time(value: str | None) -> str:
+    local_since = parse_alert_time(value)
+    if local_since is None:
+        return "немає даних"
+
+    return (
+        local_since.strftime("%H:%M")
+        if local_since.date() == datetime.now().astimezone().date()
+        else local_since.strftime("%d.%m, %H:%M")
+    )
+
+
+def earliest_since(items: list[dict]) -> str | None:
+    parsed = [
+        (local_time, item.get("since"))
+        for item in items
+        if (local_time := parse_alert_time(item.get("since"))) is not None
+    ]
+    return min(parsed, key=lambda entry: entry[0])[1] if parsed else None
 
 
 class SelectionDialog:
@@ -316,7 +348,7 @@ class Tryvoha:
 
     def _fetch_worker(self, selected: list[str], force: bool):
         try:
-            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "Tryvoha/1.4.0"})
+            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "Tryvoha/1.4.1"})
             with urllib.request.urlopen(request, timeout=8) as response:
                 payload = json.load(response)
             state = self._compute_state(payload, selected)
@@ -328,39 +360,46 @@ class Tryvoha:
         raion_alerts = payload.get("raions", [])
         oblast_alerts = payload.get("oblasts", [])
         statuses: dict[str, bool] = {}
+        active_areas: list[dict] = []
         fingerprint_parts: list[str] = []
 
         for selection_key in selected:
-            matches: list[tuple[str, dict]] = []
+            raion_matches: list[dict] = []
+            oblast_matches: list[dict] = []
             if selection_key.startswith("raion:"):
                 raion = self.raions_by_key.get(key_value(selection_key))
                 if raion:
-                    matches.extend(
-                        ("raion", item)
+                    raion_matches = [
+                        item
                         for item in raion_alerts
                         if normalize(item.get("key", "")) == normalize(raion["key"])
-                    )
-                    matches.extend(
-                        ("oblast", item)
+                    ]
+                    oblast_matches = [
+                        item
                         for item in oblast_alerts
                         if self._belongs_to_oblast(item, raion["oblast"])
-                    )
+                    ]
             elif selection_key.startswith("oblast:"):
                 oblast = next(
                     (item for item in self.oblasts if normalize(item) == key_value(selection_key)),
                     None,
                 )
                 if oblast:
-                    matches.extend(
-                        ("raion", item)
+                    raion_matches = [
+                        item
                         for item in raion_alerts
                         if self._belongs_to_oblast(item, oblast)
-                    )
-                    matches.extend(
-                        ("oblast", item)
+                    ]
+                    oblast_matches = [
+                        item
                         for item in oblast_alerts
                         if self._belongs_to_oblast(item, oblast)
-                    )
+                    ]
+
+            matches = [
+                *(("raion", item) for item in raion_matches),
+                *(("oblast", item) for item in oblast_matches),
+            ]
 
             statuses[selection_key] = bool(matches)
             for source_type, item in matches:
@@ -375,9 +414,37 @@ class Tryvoha:
                     )
                 )
 
+            if selection_key.startswith("raion:") and matches:
+                active_areas.append(
+                    {
+                        "selection_key": selection_key,
+                        "since": earliest_since(raion_matches + oblast_matches),
+                    }
+                )
+            elif selection_key.startswith("oblast:"):
+                if oblast_matches:
+                    active_areas.append(
+                        {
+                            "selection_key": selection_key,
+                            "since": earliest_since(raion_matches + oblast_matches),
+                        }
+                    )
+                else:
+                    active_areas.extend(
+                        {
+                            "selection_key": raion_key(item.get("key", "")),
+                            "since": item.get("since"),
+                        }
+                        for item in sorted(
+                            raion_matches,
+                            key=lambda alert: alert.get("name", "").lower(),
+                        )
+                    )
+
         return {
             "statuses": statuses,
-            "active": any(statuses.values()),
+            "active_areas": active_areas,
+            "active": bool(active_areas),
             "fingerprint": ";".join(sorted(fingerprint_parts)),
         }
 
@@ -408,7 +475,7 @@ class Tryvoha:
                 if all_clear
                 else "Тривоги немає"
             )
-            self._notify(title, self._notification_body(), active)
+            self._notify(title, self._notification_body(state if active else None), active)
 
         self.last_fingerprint = state["fingerprint"]
         self.last_active = active
@@ -427,7 +494,16 @@ class Tryvoha:
             self.force_pending = False
             self.request_check(True)
 
-    def _notification_body(self) -> str:
+    def _notification_body(self, active_state: dict | None = None) -> str:
+        if active_state:
+            blocks = [
+                self._display_name(area["selection_key"])
+                + "\nОголошено: "
+                + format_alert_start_time(area.get("since"))
+                for area in active_state["active_areas"]
+            ]
+            return "\n\n".join((*blocks, "Neptune"))
+
         lines = []
         for selection_key in self.settings.get("selected_area_keys", []):
             lines.append(self._display_name(selection_key))
