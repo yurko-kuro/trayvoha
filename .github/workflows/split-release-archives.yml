@@ -20,7 +20,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release download v1.4.0             --repo "${{ github.repository }}"             --pattern Tryvoha.zip             --dir incoming
+          gh release download v1.4.0 --repo "${{ github.repository }}" --pattern Tryvoha.zip --dir incoming
 
           mkdir unpacked
           unzip -q incoming/Tryvoha.zip -d unpacked
@@ -39,38 +39,37 @@ jobs:
 
           (
             cd "$windows_dir"
-            zip -qr "$GITHUB_WORKSPACE/Tryvoha-Windows.zip" .
+            zip -qr "$GITHUB_WORKSPACE/Tryvoha-Desktop-Windows.zip" .
           )
           (
             cd "$linux_dir"
-            zip -qr "$GITHUB_WORKSPACE/Tryvoha-Linux.zip" .
+            zip -qr "$GITHUB_WORKSPACE/Tryvoha-Desktop-Linux.zip" .
           )
 
-          unzip -tq Tryvoha-Windows.zip
-          unzip -tq Tryvoha-Linux.zip
-          unzip -Z1 Tryvoha-Windows.zip | grep -Eiq '\\.exe$'
-          unzip -Z1 Tryvoha-Linux.zip | grep -qx 'tryvoha.py'
-          unzip -Z1 Tryvoha-Linux.zip | grep -qx 'install.sh'
+          unzip -tq Tryvoha-Desktop-Windows.zip
+          unzip -tq Tryvoha-Desktop-Linux.zip
+          unzip -Z1 Tryvoha-Desktop-Windows.zip | grep -Eiq '\.exe$'
+          unzip -Z1 Tryvoha-Desktop-Linux.zip | grep -Eq '(^|/)tryvoha.py$'
+          unzip -Z1 Tryvoha-Desktop-Linux.zip | grep -Eq '(^|/)install.sh$'
 
       - name: Upload separate archives and remove combined archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release upload v1.4.0             --repo "${{ github.repository }}"             --clobber             Tryvoha-Windows.zip             Tryvoha-Linux.zip
+          gh release upload v1.4.0 --repo "${{ github.repository }}" --clobber Tryvoha-Desktop-Windows.zip Tryvoha-Desktop-Linux.zip
 
-          assets="$(gh release view v1.4.0             --repo "${{ github.repository }}"             --json assets             --jq '.assets[].name')"
+          assets="$(gh release view v1.4.0 --repo "${{ github.repository }}" --json assets --jq '.assets[].name')"
+          grep -qx 'Tryvoha-Desktop-Windows.zip' <<<"$assets"
+          grep -qx 'Tryvoha-Desktop-Linux.zip' <<<"$assets"
 
-          grep -qx 'Tryvoha-Windows.zip' <<<"$assets"
-          grep -qx 'Tryvoha-Linux.zip' <<<"$assets"
-
-          gh release delete-asset v1.4.0 Tryvoha.zip             --repo "${{ github.repository }}"             --yes
+          gh release delete-asset v1.4.0 Tryvoha.zip --repo "${{ github.repository }}" --yes
 
       - name: Preserve split archives for verification
         uses: actions/upload-artifact@v4
         with:
           name: split-desktop-archives
           path: |
-            Tryvoha-Windows.zip
-            Tryvoha-Linux.zip
+            Tryvoha-Desktop-Windows.zip
+            Tryvoha-Desktop-Linux.zip
           if-no-files-found: error
