@@ -19,4 +19,4 @@ dotnet publish $project `
 
 Write-Host ""
 Write-Host "READY: $output"
-Write-Host "Run: $output\Tryvoha.exe"
+Write-Host "Run: $output\Тривога.exe"
