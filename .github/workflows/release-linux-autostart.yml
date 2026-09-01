@@ -32,7 +32,15 @@ jobs:
           gh release download v1.3.8 \
             --pattern Tryvoha.zip \
             --dir previous
+          set +e
           unzip -q previous/Tryvoha.zip -d bundle
+          unzip_status="$?"
+          set -e
+
+          if [ "$unzip_status" -gt 1 ]; then
+            echo "Failed to extract the verified bundle (unzip status: $unzip_status)."
+            exit "$unzip_status"
+          fi
 
           mapfile -d '' linux_dirs < <(
             find bundle -mindepth 1 -maxdepth 3 \
