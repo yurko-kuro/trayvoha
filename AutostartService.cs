@@ -5,8 +5,8 @@ namespace Tryvoha;
 internal static class AutostartService
 {
     private const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "Tryvoha";
-    private static readonly string[] LegacyValueNames = ["AlertTray", "NeptunTray"];
+    private const string ValueName = "Тривога";
+    private static readonly string[] LegacyValueNames = ["Tryvoha", "AlertTray", "NeptunTray"];
 
     public static bool IsEnabled()
     {
