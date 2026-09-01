@@ -1,6 +1,6 @@
 Name:           tryvoha-desktop
 Version:        1.4.0
-Release:        1%{?dist}
+Release:        1
 Summary:        Air-raid alerts in the system tray
 License:        LicenseRef-Proprietary
 URL:            https://github.com/yurko-kuro/tryvoha-desktop

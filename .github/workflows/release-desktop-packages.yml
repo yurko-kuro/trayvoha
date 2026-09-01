@@ -1,0 +1,135 @@
+name: Release Desktop packages v1.4.0
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-desktop-packages.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-desktop-v1.4.0
+  cancel-in-progress: false
+
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build DEB
+        run: ./packaging/debian/build-deb.sh 1.4.0
+
+      - name: Upload DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: dist/tryvoha-desktop_1.4.0_all.deb
+          if-no-files-found: error
+
+  rpm:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install build tools
+        run: dnf install -y git tar gzip rpm-build findutils
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build RPM
+        run: ./packaging/rpm/build-rpm.sh
+
+      - name: Upload RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: dist/**/*.rpm
+          if-no-files-found: error
+
+  release:
+    needs:
+      - deb
+      - rpm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-package'
+          path: release-assets
+          merge-multiple: true
+
+      - name: Prepare portable bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p previous bundle
+          gh release download v1.3.9 \
+            --pattern Tryvoha.zip \
+            --dir previous
+
+          set +e
+          unzip -q previous/Tryvoha.zip -d bundle
+          unzip_status="$?"
+          set -e
+
+          if [ "$unzip_status" -gt 1 ]; then
+            echo "Failed to extract the verified bundle (unzip status: $unzip_status)."
+            exit "$unzip_status"
+          fi
+
+          mapfile -d '' linux_dirs < <(
+            find bundle -mindepth 1 -maxdepth 3 \
+              -type d -iname linux -print0
+          )
+
+          if [ "${#linux_dirs[@]}" -ne 1 ]; then
+            echo "Expected exactly one Linux directory in the verified bundle."
+            exit 1
+          fi
+
+          linux_dir="${linux_dirs[0]}"
+          find "$linux_dir" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+
+          install -m 0755 linux/install.sh "$linux_dir/install.sh"
+          install -m 0755 linux/uninstall.sh "$linux_dir/uninstall.sh"
+          install -m 0755 linux/tryvoha.py "$linux_dir/tryvoha.py"
+          install -m 0644 linux/README-LINUX.md "$linux_dir/README-LINUX.md"
+          install -m 0644 linux/districts.json "$linux_dir/districts.json"
+          install -m 0644 linux/tryvoha-normal.svg "$linux_dir/tryvoha-normal.svg"
+          install -m 0644 linux/tryvoha-alert.svg "$linux_dir/tryvoha-alert.svg"
+
+          (
+            cd bundle
+            zip -q -r ../Tryvoha.zip .
+          )
+
+      - name: Publish v1.4.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if gh release view v1.4.0 >/dev/null 2>&1; then
+            echo "Release v1.4.0 already exists."
+            exit 0
+          fi
+
+          gh release create v1.4.0 \
+            Tryvoha.zip \
+            release-assets/tryvoha-desktop_1.4.0_all.deb \
+            release-assets/tryvoha-desktop-1.4.0-1.noarch.rpm \
+            --target "${GITHUB_SHA}" \
+            --title "Тривога Desktop v1.4.0" \
+            --notes "Додано системні пакети Тривога Desktop для Ubuntu/Debian і Fedora. ZIP із Windows та переносною Linux-версією залишається доступним. Linux-клієнт захищено від повторного запуску; системний автозапуск можна вимкнути у меню застосунку. Windows-бінарник перенесено з v1.3.9 без перескладання."
