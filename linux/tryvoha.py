@@ -1,9 +1,10 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 
 from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
 import sys
 import threading
@@ -45,6 +46,37 @@ CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 SETTINGS_DIR = CONFIG_HOME / "tryvoha"
 SETTINGS_FILE = SETTINGS_DIR / "settings.json"
 AUTOSTART_FILE = CONFIG_HOME / "autostart" / "tryvoha.desktop"
+SYSTEM_AUTOSTART_FILE = Path("/etc/xdg/autostart/tryvoha.desktop")
+
+_INSTANCE_SOCKET: socket.socket | None = None
+
+
+def acquire_single_instance() -> bool:
+    global _INSTANCE_SOCKET
+
+    instance_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        instance_socket.bind(f"\0tryvoha-{os.getuid()}")
+    except OSError:
+        instance_socket.close()
+        return False
+
+    _INSTANCE_SOCKET = instance_socket
+    return True
+
+
+def user_autostart_is_hidden() -> bool:
+    try:
+        lines = AUTOSTART_FILE.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return False
+    return any(line.strip().lower() == "hidden=true" for line in lines)
+
+
+def autostart_is_enabled() -> bool:
+    if AUTOSTART_FILE.exists():
+        return not user_autostart_is_hidden()
+    return SYSTEM_AUTOSTART_FILE.exists()
 
 
 def normalize(value: str) -> str:
@@ -249,7 +281,7 @@ class AlertTray:
         menu.append(check_now)
 
         self.autostart_item = Gtk.CheckMenuItem(label="Запускати разом із системою")
-        self.autostart_item.set_active(AUTOSTART_FILE.exists())
+        self.autostart_item.set_active(autostart_is_enabled())
         self.autostart_item.connect("toggled", self._toggle_autostart)
         menu.append(self.autostart_item)
         menu.append(Gtk.SeparatorMenuItem())
@@ -312,7 +344,7 @@ class AlertTray:
 
     def _fetch_worker(self, selected: list[str], force: bool):
         try:
-            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "Tryvoha/1.3.8"})
+            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "Tryvoha/1.4.0"})
             with urllib.request.urlopen(request, timeout=8) as response:
                 payload = json.load(response)
             state = self._compute_state(payload, selected)
@@ -472,27 +504,40 @@ class AlertTray:
     def _toggle_autostart(self, item):
         enabled = item.get_active()
         if enabled:
-            AUTOSTART_FILE.parent.mkdir(parents=True, exist_ok=True)
-            script_path = str(Path(__file__).resolve()).replace('"', '\\"')
-            AUTOSTART_FILE.write_text(
-                "\n".join(
-                    (
-                        "[Desktop Entry]",
-                        "Type=Application",
-                        "Name=Тривога",
-                        f'Exec=python3 "{script_path}"',
-                        "Terminal=false",
-                        "X-GNOME-Autostart-enabled=true",
-                        "",
-                    )
-                ),
-                encoding="utf-8",
-            )
+            if SYSTEM_AUTOSTART_FILE.exists():
+                try:
+                    AUTOSTART_FILE.unlink()
+                except FileNotFoundError:
+                    pass
+            else:
+                AUTOSTART_FILE.parent.mkdir(parents=True, exist_ok=True)
+                script_path = str(Path(__file__).resolve()).replace('"', '\\"')
+                AUTOSTART_FILE.write_text(
+                    "\n".join(
+                        (
+                            "[Desktop Entry]",
+                            "Type=Application",
+                            "Name=Тривога",
+                            f'Exec=python3 "{script_path}"',
+                            "Terminal=false",
+                            "X-GNOME-Autostart-enabled=true",
+                            "",
+                        )
+                    ),
+                    encoding="utf-8",
+                )
         else:
-            try:
-                AUTOSTART_FILE.unlink()
-            except FileNotFoundError:
-                pass
+            if SYSTEM_AUTOSTART_FILE.exists():
+                AUTOSTART_FILE.parent.mkdir(parents=True, exist_ok=True)
+                AUTOSTART_FILE.write_text(
+                    "[Desktop Entry]\nHidden=true\n",
+                    encoding="utf-8",
+                )
+            else:
+                try:
+                    AUTOSTART_FILE.unlink()
+                except FileNotFoundError:
+                    pass
 
     @staticmethod
     def _load_settings() -> dict:
@@ -513,6 +558,8 @@ class AlertTray:
 
 
 def main() -> int:
+    if not acquire_single_instance():
+        return 0
     AlertTray()
     Gtk.main()
     return 0
