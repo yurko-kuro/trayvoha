@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed class NeptunAlertsClient : IDisposable
 {
@@ -13,7 +13,7 @@ internal sealed class NeptunAlertsClient : IDisposable
         {
             Timeout = TimeSpan.FromSeconds(8),
         };
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Tryvoha/1.4.1");
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("AlertTray/1.3.8");
     }
 
     public async Task<AlertState> GetStateAsync(

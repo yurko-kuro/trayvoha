@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed class RegionSelectionForm : Form
 {

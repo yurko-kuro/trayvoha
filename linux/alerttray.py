@@ -10,7 +10,6 @@ import threading
 import unicodedata
 import urllib.request
 import webbrowser
-from datetime import datetime
 from pathlib import Path
 
 try:
@@ -37,17 +36,15 @@ except (ImportError, ValueError) as error:
 
 APP_DIR = Path(__file__).resolve().parent
 CATALOG_FILE = APP_DIR / "districts.json"
-NORMAL_ICON = APP_DIR / "tryvoha-normal.svg"
-ALERT_ICON = APP_DIR / "tryvoha-alert.svg"
+NORMAL_ICON = APP_DIR / "alerttray-normal.svg"
+ALERT_ICON = APP_DIR / "alerttray-alert.svg"
 SOURCE_URL = "https://neptun.in.ua/"
 ALERTS_URL = "https://neptun.in.ua/api/v1/alerts"
 
 CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-SETTINGS_DIR = CONFIG_HOME / "tryvoha"
+SETTINGS_DIR = CONFIG_HOME / "alerttray"
 SETTINGS_FILE = SETTINGS_DIR / "settings.json"
-LEGACY_SETTINGS_FILE = CONFIG_HOME / "alerttray" / "settings.json"
-AUTOSTART_FILE = CONFIG_HOME / "autostart" / "tryvoha.desktop"
-LEGACY_AUTOSTART_FILE = CONFIG_HOME / "autostart" / "alerttray.desktop"
+AUTOSTART_FILE = CONFIG_HOME / "autostart" / "alerttray.desktop"
 
 
 def normalize(value: str) -> str:
@@ -64,37 +61,6 @@ def raion_key(key: str) -> str:
 
 def key_value(selection_key: str) -> str:
     return selection_key.split(":", 1)[1] if ":" in selection_key else ""
-
-
-def parse_alert_time(value: str | None) -> datetime | None:
-    if not value:
-        return None
-
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone()
-    except (TypeError, ValueError):
-        return None
-
-
-def format_alert_start_time(value: str | None) -> str:
-    local_since = parse_alert_time(value)
-    if local_since is None:
-        return "немає даних"
-
-    return (
-        local_since.strftime("%H:%M")
-        if local_since.date() == datetime.now().astimezone().date()
-        else local_since.strftime("%d.%m, %H:%M")
-    )
-
-
-def earliest_since(items: list[dict]) -> str | None:
-    parsed = [
-        (local_time, item.get("since"))
-        for item in items
-        if (local_time := parse_alert_time(item.get("since"))) is not None
-    ]
-    return min(parsed, key=lambda entry: entry[0])[1] if parsed else None
 
 
 class SelectionDialog:
@@ -235,7 +201,7 @@ class SelectionDialog:
         return True, sorted(set(selected))
 
 
-class Tryvoha:
+class AlertTray:
     def __init__(self):
         catalog = json.loads(CATALOG_FILE.read_text(encoding="utf-8"))
         self.oblasts: list[str] = catalog["oblasts"]
@@ -249,8 +215,8 @@ class Tryvoha:
         self.force_pending = False
 
         self.indicator = AppIndicator3.Indicator.new(
-            "tryvoha",
-            "tryvoha-normal",
+            "alerttray",
+            "alerttray-normal",
             AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
         )
         self.indicator.set_icon_theme_path(str(APP_DIR))
@@ -283,9 +249,7 @@ class Tryvoha:
         menu.append(check_now)
 
         self.autostart_item = Gtk.CheckMenuItem(label="Запускати разом із системою")
-        self.autostart_item.set_active(
-            AUTOSTART_FILE.exists() or LEGACY_AUTOSTART_FILE.exists()
-        )
+        self.autostart_item.set_active(AUTOSTART_FILE.exists())
         self.autostart_item.connect("toggled", self._toggle_autostart)
         menu.append(self.autostart_item)
         menu.append(Gtk.SeparatorMenuItem())
@@ -348,7 +312,7 @@ class Tryvoha:
 
     def _fetch_worker(self, selected: list[str], force: bool):
         try:
-            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "Tryvoha/1.4.1"})
+            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "AlertTray/1.3.8"})
             with urllib.request.urlopen(request, timeout=8) as response:
                 payload = json.load(response)
             state = self._compute_state(payload, selected)
@@ -360,46 +324,39 @@ class Tryvoha:
         raion_alerts = payload.get("raions", [])
         oblast_alerts = payload.get("oblasts", [])
         statuses: dict[str, bool] = {}
-        active_areas: list[dict] = []
         fingerprint_parts: list[str] = []
 
         for selection_key in selected:
-            raion_matches: list[dict] = []
-            oblast_matches: list[dict] = []
+            matches: list[tuple[str, dict]] = []
             if selection_key.startswith("raion:"):
                 raion = self.raions_by_key.get(key_value(selection_key))
                 if raion:
-                    raion_matches = [
-                        item
+                    matches.extend(
+                        ("raion", item)
                         for item in raion_alerts
                         if normalize(item.get("key", "")) == normalize(raion["key"])
-                    ]
-                    oblast_matches = [
-                        item
+                    )
+                    matches.extend(
+                        ("oblast", item)
                         for item in oblast_alerts
                         if self._belongs_to_oblast(item, raion["oblast"])
-                    ]
+                    )
             elif selection_key.startswith("oblast:"):
                 oblast = next(
                     (item for item in self.oblasts if normalize(item) == key_value(selection_key)),
                     None,
                 )
                 if oblast:
-                    raion_matches = [
-                        item
+                    matches.extend(
+                        ("raion", item)
                         for item in raion_alerts
                         if self._belongs_to_oblast(item, oblast)
-                    ]
-                    oblast_matches = [
-                        item
+                    )
+                    matches.extend(
+                        ("oblast", item)
                         for item in oblast_alerts
                         if self._belongs_to_oblast(item, oblast)
-                    ]
-
-            matches = [
-                *(("raion", item) for item in raion_matches),
-                *(("oblast", item) for item in oblast_matches),
-            ]
+                    )
 
             statuses[selection_key] = bool(matches)
             for source_type, item in matches:
@@ -414,37 +371,9 @@ class Tryvoha:
                     )
                 )
 
-            if selection_key.startswith("raion:") and matches:
-                active_areas.append(
-                    {
-                        "selection_key": selection_key,
-                        "since": earliest_since(raion_matches + oblast_matches),
-                    }
-                )
-            elif selection_key.startswith("oblast:"):
-                if oblast_matches:
-                    active_areas.append(
-                        {
-                            "selection_key": selection_key,
-                            "since": earliest_since(raion_matches + oblast_matches),
-                        }
-                    )
-                else:
-                    active_areas.extend(
-                        {
-                            "selection_key": raion_key(item.get("key", "")),
-                            "since": item.get("since"),
-                        }
-                        for item in sorted(
-                            raion_matches,
-                            key=lambda alert: alert.get("name", "").lower(),
-                        )
-                    )
-
         return {
             "statuses": statuses,
-            "active_areas": active_areas,
-            "active": bool(active_areas),
+            "active": any(statuses.values()),
             "fingerprint": ";".join(sorted(fingerprint_parts)),
         }
 
@@ -475,7 +404,7 @@ class Tryvoha:
                 if all_clear
                 else "Тривоги немає"
             )
-            self._notify(title, self._notification_body(state if active else None), active)
+            self._notify(title, self._notification_body(), active)
 
         self.last_fingerprint = state["fingerprint"]
         self.last_active = active
@@ -494,16 +423,7 @@ class Tryvoha:
             self.force_pending = False
             self.request_check(True)
 
-    def _notification_body(self, active_state: dict | None = None) -> str:
-        if active_state:
-            blocks = [
-                self._display_name(area["selection_key"])
-                + "\nОголошено: "
-                + format_alert_start_time(area.get("since"))
-                for area in active_state["active_areas"]
-            ]
-            return "\n\n".join((*blocks, "Neptune"))
-
+    def _notification_body(self) -> str:
         lines = []
         for selection_key in self.settings.get("selected_area_keys", []):
             lines.append(self._display_name(selection_key))
@@ -534,7 +454,7 @@ class Tryvoha:
         return f"Території: вибрано {len(selected)}"
 
     def _set_icon(self, active: bool):
-        icon_name = "tryvoha-alert" if active else "tryvoha-normal"
+        icon_name = "alerttray-alert" if active else "alerttray-normal"
         self.indicator.set_icon_full(icon_name, "Повітряна тривога" if active else "Тривога")
 
     @staticmethod
@@ -559,7 +479,7 @@ class Tryvoha:
                     (
                         "[Desktop Entry]",
                         "Type=Application",
-                        "Name=Тривога",
+                        "Name=AlertTray",
                         f'Exec=python3 "{script_path}"',
                         "Terminal=false",
                         "X-GNOME-Autostart-enabled=true",
@@ -568,33 +488,20 @@ class Tryvoha:
                 ),
                 encoding="utf-8",
             )
+        else:
             try:
-                LEGACY_AUTOSTART_FILE.unlink()
+                AUTOSTART_FILE.unlink()
             except FileNotFoundError:
                 pass
-        else:
-            for path in (AUTOSTART_FILE, LEGACY_AUTOSTART_FILE):
-                try:
-                    path.unlink()
-                except FileNotFoundError:
-                    pass
 
     @staticmethod
     def _load_settings() -> dict:
         default = {"version": 1, "setup_completed": False, "selected_area_keys": []}
-        source = SETTINGS_FILE if SETTINGS_FILE.exists() else LEGACY_SETTINGS_FILE
         try:
-            loaded = json.loads(source.read_text(encoding="utf-8"))
+            loaded = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
             if not isinstance(loaded, dict):
                 return default
-            settings = {**default, **loaded}
-            if source == LEGACY_SETTINGS_FILE:
-                SETTINGS_DIR.mkdir(parents=True, exist_ok=True)
-                SETTINGS_FILE.write_text(
-                    json.dumps(settings, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
-                )
-            return settings
+            return {**default, **loaded}
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return default
 
@@ -606,7 +513,7 @@ class Tryvoha:
 
 
 def main() -> int:
-    Tryvoha()
+    AlertTray()
     Gtk.main()
     return 0
 

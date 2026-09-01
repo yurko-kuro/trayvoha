@@ -5,16 +5,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>Тривога</AssemblyName>
-    <RootNamespace>Tryvoha</RootNamespace>
-    <Version>1.4.5</Version>
-    <Authors>yurko-kuro</Authors>
-    <Description>Повітряні тривоги для вибраних районів та областей України.</Description>
-    <RepositoryUrl>https://github.com/yurko-kuro/tryvoha-desktop</RepositoryUrl>
+    <AssemblyName>AlertTray</AssemblyName>
+    <RootNamespace>NeptunTray</RootNamespace>
+    <Version>1.3.8</Version>
 
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>false</PublishSingleFile>
+    <PublishSingleFile>true</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>

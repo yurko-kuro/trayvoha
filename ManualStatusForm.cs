@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Drawing;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed class ManualStatusForm : Form
 {

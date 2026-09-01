@@ -1,4 +1,4 @@
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed record RaionDefinition(string Key, string Name, string Oblast);
 

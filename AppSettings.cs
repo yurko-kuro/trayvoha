@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed class AppSettings
 {
@@ -55,35 +55,20 @@ internal static class SettingsStore
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Тривога");
+        "NeptunTray");
 
     private static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
-
-    private static IEnumerable<string> LegacySettingsPaths
-    {
-        get
-        {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            yield return Path.Combine(appData, "Tryvoha", "settings.json");
-            yield return Path.Combine(appData, "AlertTray", "settings.json");
-            yield return Path.Combine(appData, "NeptunTray", "settings.json");
-        }
-    }
 
     public static AppSettings Load()
     {
         try
         {
-            var sourcePath = File.Exists(SettingsPath)
-                ? SettingsPath
-                : LegacySettingsPaths.FirstOrDefault(File.Exists);
-
-            if (sourcePath is null)
+            if (!File.Exists(SettingsPath))
             {
                 return CreateDefault();
             }
 
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(sourcePath))
+            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath))
                 ?? CreateDefault();
 
             if (settings.Version < CurrentVersion)
@@ -95,19 +80,6 @@ internal static class SettingsStore
             }
 
             settings.SelectedAreaKeys = Sanitize(settings.SelectedAreaKeys);
-
-            if (!string.Equals(sourcePath, SettingsPath, StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    Save(settings);
-                }
-                catch
-                {
-                    // The legacy settings remain usable for this run.
-                }
-            }
-
             return settings;
         }
         catch

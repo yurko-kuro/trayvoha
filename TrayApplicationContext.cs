@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed class TrayApplicationContext : ApplicationContext
 {

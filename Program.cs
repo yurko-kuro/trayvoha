@@ -1,8 +1,8 @@
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal static class Program
 {
-    private const string MutexName = @"Local\Tryvoha.SingleInstance";
+    private const string MutexName = @"Local\AlertTray.SingleInstance";
 
     [STAThread]
     private static void Main()

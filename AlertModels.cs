@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal sealed class AlertsResponse
 {

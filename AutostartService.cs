@@ -1,17 +1,17 @@
 using Microsoft.Win32;
 
-namespace Tryvoha;
+namespace NeptunTray;
 
 internal static class AutostartService
 {
     private const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "Тривога";
-    private static readonly string[] LegacyValueNames = ["Tryvoha", "AlertTray", "NeptunTray"];
+    private const string ValueName = "AlertTray";
+    private const string LegacyValueName = "NeptunTray";
 
     public static bool IsEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(RegistryPath, writable: false);
-        return HasValue(key, ValueName) || LegacyValueNames.Any(name => HasValue(key, name));
+        return HasValue(key, ValueName) || HasValue(key, LegacyValueName);
     }
 
     public static void SetEnabled(bool enabled)
@@ -20,14 +20,14 @@ internal static class AutostartService
         if (!enabled)
         {
             key.DeleteValue(ValueName, throwOnMissingValue: false);
-            DeleteLegacyValues(key);
+            key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
             return;
         }
 
         var executablePath = Environment.ProcessPath
             ?? throw new InvalidOperationException("Не вдалося визначити шлях до програми.");
         key.SetValue(ValueName, $"\"{executablePath}\"");
-        DeleteLegacyValues(key);
+        key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
     }
 
     public static void RefreshPathIfEnabled()
@@ -41,13 +41,5 @@ internal static class AutostartService
     private static bool HasValue(RegistryKey? key, string valueName)
     {
         return key?.GetValue(valueName) is string value && !string.IsNullOrWhiteSpace(value);
-    }
-
-    private static void DeleteLegacyValues(RegistryKey key)
-    {
-        foreach (var valueName in LegacyValueNames)
-        {
-            key.DeleteValue(valueName, throwOnMissingValue: false);
-        }
     }
 }
