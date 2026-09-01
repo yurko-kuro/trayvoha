@@ -49,8 +49,8 @@ jobs:
       - run: .\build-windows.ps1
       - uses: actions/upload-artifact@v4
         with:
-          name: windows
-          path: dist/Tryvoha.exe
+          name: windows-portable
+          path: dist/windows
 
   linux:
     needs: prepare
@@ -58,28 +58,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: zip -r Tryvoha-linux.zip linux README.md
+      - run: python3 -m py_compile linux/tryvoha.py
+      - run: bash -n linux/install.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: linux
-          path: Tryvoha-linux.zip
+          name: linux-portable
+          path: linux
 
   publish:
     needs: [prepare, windows, linux]
     if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: windows-portable
+          path: bundle/Windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-portable
+          path: bundle/Linux
+      - name: Build portable archive
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          cp README.md bundle/README.md
+          archive="Tryvoha-${RELEASE_TAG}-portable.zip"
+          (cd bundle && zip -r "../$archive" Windows Linux README.md)
+          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: >-
           gh release create "$RELEASE_TAG"
-          artifacts/windows/Tryvoha.exe
-          artifacts/linux/Tryvoha-linux.zip
+          "$ARCHIVE"
           --repo "$GITHUB_REPOSITORY"
           --target "$GITHUB_SHA"
           --title "Тривога $RELEASE_TAG"
