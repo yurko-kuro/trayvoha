@@ -49,7 +49,7 @@ jobs:
       - run: .\build-windows.ps1
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-portable
+          name: windows
           path: dist/windows
 
   linux:
@@ -62,7 +62,7 @@ jobs:
       - run: bash -n linux/install.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-portable
+          name: linux
           path: linux
 
   publish:
@@ -73,28 +73,34 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: windows-portable
+          name: windows
           path: bundle/Windows
       - uses: actions/download-artifact@v4
         with:
-          name: linux-portable
+          name: linux
           path: bundle/Linux
-      - name: Build portable archive
-        env:
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+      - name: Build archive
         run: |
           cp README.md bundle/README.md
-          archive="Tryvoha-${RELEASE_TAG}-portable.zip"
-          (cd bundle && zip -r "../$archive" Windows Linux README.md)
-          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
-      - name: Create GitHub release
+          (cd bundle && zip -r "../Тривога.zip" Windows Linux README.md)
+      - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: >-
           gh release create "$RELEASE_TAG"
-          "$ARCHIVE"
+          "Тривога.zip"
           --repo "$GITHUB_REPOSITORY"
           --target "$GITHUB_SHA"
           --title "Тривога $RELEASE_TAG"
-          --generate-notes
+          --notes "Актуальна перевірена збірка «Тривога» для Windows і Linux."
+      - name: Remove old releases and tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName' | while IFS= read -r tag; do
+            if [[ -n "$tag" && "$tag" != "$RELEASE_TAG" ]]; then
+              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y
+            fi
+          done
