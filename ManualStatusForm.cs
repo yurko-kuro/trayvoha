@@ -1,12 +1,9 @@
-using System.Diagnostics;
 using System.Drawing;
 
 namespace NeptunTray;
 
 internal sealed class ManualStatusForm : Form
 {
-    private const string SourceUrl = "https://neptun.in.ua/";
-
     private readonly Label _titleLabel;
     private readonly TextBox _bodyBox;
     private readonly System.Windows.Forms.Timer _closeTimer;
@@ -77,26 +74,21 @@ internal sealed class ManualStatusForm : Form
             TabStop = false,
         };
 
-        var sourceLink = new LinkLabel
+        var sourceLabel = new Label
         {
             Dock = DockStyle.Fill,
-            Text = "Neptune",
+            Text = "Джерело: NEPTUN",
             Font = new Font("Segoe UI", 8.5F),
-            LinkColor = _palette.SecondaryText,
-            ActiveLinkColor = _palette.Accent,
-            VisitedLinkColor = _palette.SecondaryText,
+            ForeColor = _palette.SecondaryText,
             TextAlign = ContentAlignment.BottomLeft,
-            TabStop = false,
         };
-        sourceLink.LinkClicked += (_, _) =>
-            Process.Start(new ProcessStartInfo(SourceUrl) { UseShellExecute = true });
 
         layout.Controls.Add(_titleLabel, 0, 0);
         layout.Controls.Add(closeButton, 1, 0);
         layout.Controls.Add(_bodyBox, 0, 1);
         layout.SetColumnSpan(_bodyBox, 2);
-        layout.Controls.Add(sourceLink, 0, 2);
-        layout.SetColumnSpan(sourceLink, 2);
+        layout.Controls.Add(sourceLabel, 0, 2);
+        layout.SetColumnSpan(sourceLabel, 2);
 
         Controls.Add(layout);
 
