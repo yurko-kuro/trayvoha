@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import math
 import struct
 import zlib
 from pathlib import Path
@@ -116,7 +115,7 @@ def write_png(path: Path, size: int, *, rounded: bool, transparent_outside: bool
 
 
 def write_ico(path: Path, sizes: list[int]) -> None:
-    images = [write_png(path.parent / f"tryvoha-{size}.png", size, rounded=True) for size in sizes]
+    images = [write_png(path.parent / f"trayvoha-{size}.png", size, rounded=True) for size in sizes]
     header = struct.pack("<HHH", 0, 1, len(images))
     entries = bytearray()
     offset = 6 + 16 * len(images)
@@ -139,7 +138,7 @@ def write_icns(path: Path) -> None:
     ]
     chunks = []
     for code, size in mapping:
-        png = write_png(path.parent / f"tryvoha-{size}.png", size, rounded=False, transparent_outside=False)
+        png = write_png(path.parent / f"trayvoha-{size}.png", size, rounded=False, transparent_outside=False)
         chunks.append(code.encode("ascii") + struct.pack(">I", 8 + len(png)) + png)
     body = b"".join(chunks)
     path.write_bytes(b"icns" + struct.pack(">I", 8 + len(body)) + body)
@@ -148,7 +147,7 @@ def write_icns(path: Path) -> None:
 def write_linux() -> None:
     out = ASSETS / "linux"
     for size in [16, 24, 32, 48, 64, 128, 256, 512]:
-        write_png(out / f"tryvoha-{size}.png", size, rounded=True)
+        write_png(out / f"trayvoha-{size}.png", size, rounded=True)
 
 
 def write_android() -> None:
@@ -174,13 +173,13 @@ def write_android() -> None:
     values = res / "values"
     values.mkdir(parents=True, exist_ok=True)
     (values / "colors.xml").write_text(
-        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <color name=\"tryvoha_icon_background\">#111827</color>\n</resources>\n",
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <color name=\"trayvoha_icon_background\">#111827</color>\n</resources>\n",
         encoding="utf-8",
     )
 
     anydpi = res / "mipmap-anydpi-v26"
     anydpi.mkdir(parents=True, exist_ok=True)
-    adaptive = """<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<adaptive-icon xmlns:android=\"http://schemas.android.com/apk/res/android\">\n    <background android:drawable=\"@color/tryvoha_icon_background\"/>\n    <foreground android:drawable=\"@drawable/ic_launcher_foreground\"/>\n</adaptive-icon>\n"""
+    adaptive = """<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<adaptive-icon xmlns:android=\"http://schemas.android.com/apk/res/android\">\n    <background android:drawable=\"@color/trayvoha_icon_background\"/>\n    <foreground android:drawable=\"@drawable/ic_launcher_foreground\"/>\n</adaptive-icon>\n"""
     (anydpi / "ic_launcher.xml").write_text(adaptive, encoding="utf-8")
     (anydpi / "ic_launcher_round.xml").write_text(adaptive, encoding="utf-8")
 
@@ -201,7 +200,7 @@ def write_ios() -> None:
     ]
     images = []
     for idiom, logical, scale, pixels in specs:
-        filename = f"tryvoha-{pixels}.png"
+        filename = f"trayvoha-{pixels}.png"
         write_png(out / filename, pixels, rounded=False, transparent_outside=False)
         images.append({"idiom": idiom, "size": logical, "scale": scale, "filename": filename})
     (out / "Contents.json").write_text(
@@ -227,23 +226,23 @@ def write_macos() -> None:
     ]
     images = []
     for logical, scale, pixels in specs:
-        filename = f"tryvoha-{pixels}.png"
+        filename = f"trayvoha-{pixels}.png"
         write_png(out / filename, pixels, rounded=False, transparent_outside=False)
         images.append({"idiom": "mac", "size": logical, "scale": scale, "filename": filename})
     (out / "Contents.json").write_text(
         json.dumps({"images": images, "info": {"author": "xcode", "version": 1}}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    write_icns(ASSETS / "macos" / "tryvoha.icns")
+    write_icns(ASSETS / "macos" / "trayvoha.icns")
 
 
 def main() -> int:
-    write_ico(ASSETS / "windows" / "tryvoha.ico", [16, 24, 32, 48, 64, 128, 256])
+    write_ico(ASSETS / "windows" / "trayvoha.ico", [16, 24, 32, 48, 64, 128, 256])
     write_linux()
     write_android()
     write_ios()
     write_macos()
-    print("Готово: іконки Тривоги згенеровано для Windows, Linux, macOS, Android та iOS.")
+    print("Готово: іконки TrayVoha згенеровано для Windows, Linux, macOS, Android та iOS.")
     return 0
 
 
