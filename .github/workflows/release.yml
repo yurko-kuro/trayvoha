@@ -1,4 +1,4 @@
-name: TrayVoha draft release
+name: TrayVoha — чернетка релізу
 
 on:
   workflow_dispatch:
