@@ -27,14 +27,15 @@
 
 ### macOS
 
-- `TrayVoha-macOS.zip` — нативний `TrayVoha.app` для macOS.
+- `TrayVoha-macOS.zip` — universal `TrayVoha.app` для `arm64` і `x86_64`, macOS 13+.
 
-Поточна macOS-збірка має ad-hoc code signature для перевірки цілісності bundle у CI. Для широкого production-розповсюдження потрібні Apple Developer ID signing і notarization.
+CI збирає архітектури окремо, об'єднує їх через `lipo` та перевіряє наявність обох slices у фінальному виконуваному файлі. Поточна macOS-збірка має ad-hoc code signature для перевірки цілісності bundle у CI. Для широкого production-розповсюдження потрібні Apple Developer ID signing і notarization.
 
 ## Що входить до 1.5.0
 
 - канонічне ім'я продукту TrayVoha;
 - Windows, Linux і macOS;
+- universal macOS binary для Apple Silicon та Intel;
 - ручний вибір областей і районів;
 - локальне зберігання вибору;
 - автоматична перевірка стану приблизно раз на 10 секунд;
