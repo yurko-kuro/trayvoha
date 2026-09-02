@@ -9,8 +9,11 @@ internal sealed class ManualStatusForm : Form
     private readonly System.Windows.Forms.Timer _closeTimer;
     private readonly AppPalette _palette;
 
+    public bool IsDarkTheme { get; }
+
     public ManualStatusForm()
     {
+        IsDarkTheme = AppTheme.IsDark;
         _palette = AppTheme.Current;
 
         FormBorderStyle = FormBorderStyle.None;
