@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$project = Join-Path $PSScriptRoot "NeptunTray.csproj"
+$project = Join-Path $PSScriptRoot "TrayVoha.csproj"
 $output = Join-Path $PSScriptRoot "dist"
 $generator = Join-Path $PSScriptRoot "tools\generate-icon-assets.py"
 
@@ -19,7 +19,7 @@ else {
     & $python.Source $generator
 }
 
-$icon = Join-Path $PSScriptRoot "assets\windows\tryvoha.ico"
+$icon = Join-Path $PSScriptRoot "assets\windows\trayvoha.ico"
 if (-not (Test-Path $icon)) {
     throw "Не вдалося згенерувати Windows-іконку: $icon"
 }
@@ -32,4 +32,4 @@ dotnet publish $project `
     --output $output
 
 Write-Host ""
-Write-Host "ГОТОВО: $output\AlertTray.exe"
+Write-Host "ГОТОВО: $output\TrayVoha.exe"
