@@ -51,7 +51,12 @@ jobs:
           )
           edit(
               "packaging/debian/build-deb.sh",
-              lambda s: re.sub(r'version="\$\{1:-[^}]+\}"', f'version="${{1:-{version}}}"', s, count=1),
+              lambda s: re.sub(
+                  r'version="\$\{1:-[^}]+\}"',
+                  'version="$' + '{1:-' + version + '}"',
+                  s,
+                  count=1,
+              ),
           )
           edit(
               "packaging/rpm/trayvoha.spec",
@@ -80,7 +85,7 @@ jobs:
           grep -F 'TrayVoha/1.5.0' linux/trayvoha.py >/dev/null
           grep -F 'Version:        1.5.0' packaging/rpm/trayvoha.spec >/dev/null
 
-          if git grep -n -E 'AlertTray|NeptunTray|Tryvoha' -- ':!README.md'; then
+          if git grep -n -E 'AlertTray|NeptunTray|Tryvoha'; then
             echo 'ПОМИЛКА: знайдено legacy product identifier' >&2
             exit 1
           fi
