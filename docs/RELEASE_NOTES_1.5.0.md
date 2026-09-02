@@ -32,10 +32,11 @@ TrayVoha 1.5.0 — перший канонічний реліз TrayVoha з по
 ## macOS
 
 - нативний Swift/AppKit menu-bar застосунок;
-- `TrayVoha-macOS.zip` із universal `TrayVoha.app` для Apple Silicon (`arm64`) та Intel (`x86_64`);
+- `TrayVoha-macOS.dmg` — основний користувацький образ із `TrayVoha.app` та посиланням на `Applications` для drag-to-Applications встановлення;
+- `TrayVoha-macOS.zip` — альтернативний архів із тим самим universal `TrayVoha.app` для Apple Silicon (`arm64`) та Intel (`x86_64`);
 - мінімальна версія — macOS 13;
 - системні Notification Center, Light/Dark appearance та автозапуск через macOS;
-- CI окремо збирає обидві архітектури, об'єднує їх через `lipo` та перевіряє фінальний universal binary на Apple runner.
+- CI окремо збирає обидві архітектури, об'єднує їх через `lipo`, перевіряє фінальний universal binary та монтує DMG для перевірки його вмісту на Apple runner.
 
 ## Безпека та приватність
 
