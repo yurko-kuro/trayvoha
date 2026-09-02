@@ -97,7 +97,6 @@ jobs:
           }
           '@ | Set-Content -Encoding utf8 (Join-Path $settingsDir 'settings.json')
 
-          $before = @(Get-Process | Select-Object -ExpandProperty Id)
           $p = Start-Process -FilePath $exe -PassThru
           try {
               Start-Sleep -Seconds 15
@@ -146,13 +145,48 @@ jobs:
 
           Get-Content $report
 
-      - name: Upload audited Windows artifact
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $isccCandidates = @(
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $iscc) {
+              choco install innosetup --no-progress -y
+              $iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+
+          if (-not $iscc) {
+              throw 'Inno Setup compiler не знайдено.'
+          }
+
+          & $iscc .\packaging\windows\TrayVoha.iss
+          if ($LASTEXITCODE -ne 0) {
+              throw "Inno Setup завершився з кодом $LASTEXITCODE"
+          }
+
+          $installer = '.\dist-installer\TrayVoha-Setup-x64.exe'
+          if (-not (Test-Path $installer)) {
+              throw 'TrayVoha-Setup-x64.exe не створено.'
+          }
+          if ((Get-Item $installer).Length -le 0) {
+              throw 'TrayVoha-Setup-x64.exe порожній.'
+          }
+
+          Write-Host "Installer SHA256: $((Get-FileHash $installer -Algorithm SHA256).Hash)"
+
+      - name: Upload audited Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: TrayVoha-Windows-ci
           path: |
             dist-ci/TrayVoha.exe
             dist-ci/runtime-audit.txt
+            dist-installer/TrayVoha-Setup-x64.exe
           if-no-files-found: error
           retention-days: 14
 
