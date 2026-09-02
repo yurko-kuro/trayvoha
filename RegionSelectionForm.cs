@@ -151,26 +151,27 @@ internal sealed class RegionSelectionForm : Form
 
     private void OnAfterCheck(object? sender, TreeViewEventArgs e)
     {
-        if (_updatingChecks || e.Action == TreeViewAction.Unknown)
+        if (_updatingChecks || e.Action == TreeViewAction.Unknown || e.Node is null)
         {
             return;
         }
 
+        var node = e.Node;
         _updatingChecks = true;
         try
         {
-            var parent = e.Node.Parent;
+            var parent = node.Parent;
             if (parent is null)
             {
-                if (e.Node.Checked)
+                if (node.Checked)
                 {
-                    foreach (TreeNode child in e.Node.Nodes)
+                    foreach (TreeNode child in node.Nodes)
                     {
                         child.Checked = false;
                     }
                 }
             }
-            else if (e.Node.Checked)
+            else if (node.Checked)
             {
                 parent.Checked = false;
             }
