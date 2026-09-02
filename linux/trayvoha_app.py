@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import os
 import socket
@@ -365,6 +366,7 @@ class TrayVohaApp:
         raion_alerts = payload.get("raions", [])
         oblast_alerts = payload.get("oblasts", [])
         statuses: dict[str, bool] = {}
+        active_areas: list[dict] = []
         fingerprint_parts: list[str] = []
 
         for selection_key in selected:
@@ -400,6 +402,19 @@ class TrayVohaApp:
                     )
 
             statuses[selection_key] = bool(matches)
+            if matches:
+                since_values = [
+                    str(item.get("since", ""))
+                    for _source_type, item in matches
+                    if item.get("since")
+                ]
+                active_areas.append(
+                    {
+                        "selection_key": selection_key,
+                        "since": min(since_values) if since_values else "",
+                    }
+                )
+
             for source_type, item in matches:
                 fingerprint_parts.append(
                     "|".join(
@@ -415,6 +430,7 @@ class TrayVohaApp:
         return {
             "statuses": statuses,
             "active": any(statuses.values()),
+            "active_areas": active_areas,
             "fingerprint": ";".join(sorted(fingerprint_parts)),
         }
 
@@ -445,7 +461,7 @@ class TrayVohaApp:
                 if all_clear
                 else "Тривоги немає"
             )
-            self._notify(title, self._notification_body(), active)
+            self._notify(title, self._notification_body(state), active)
 
         self.last_fingerprint = state["fingerprint"]
         self.last_active = active
@@ -464,12 +480,32 @@ class TrayVohaApp:
             self.force_pending = False
             self.request_check(True)
 
-    def _notification_body(self) -> str:
-        lines = []
-        for selection_key in self.settings.get("selected_area_keys", []):
-            lines.append(self._display_name(selection_key))
+    def _notification_body(self, state: dict) -> str:
+        lines: list[str] = []
+        if state["active"]:
+            for active_area in state.get("active_areas", []):
+                if lines:
+                    lines.append("")
+                lines.append(self._display_name(active_area["selection_key"]))
+                lines.append(f'Оголошено: {self._format_alert_time(active_area.get("since", ""))}')
+        else:
+            for selection_key in self.settings.get("selected_area_keys", []):
+                lines.append(self._display_name(selection_key))
+
         lines.extend(("", "Джерело: NEPTUN"))
         return "\n".join(lines)
+
+    @staticmethod
+    def _format_alert_time(value: str) -> str:
+        if not value:
+            return "немає даних"
+        try:
+            alert_time = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone()
+        except (TypeError, ValueError):
+            return "немає даних"
+
+        now = datetime.now().astimezone()
+        return alert_time.strftime("%H:%M") if alert_time.date() == now.date() else alert_time.strftime("%d.%m, %H:%M")
 
     def _display_name(self, selection_key: str) -> str:
         if selection_key.startswith("raion:"):
