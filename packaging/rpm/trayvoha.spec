@@ -32,6 +32,8 @@ install -d \
 
 install -m 0755 %{repo_root}/linux/trayvoha.py \
     %{buildroot}%{appdir}/trayvoha.py
+install -m 0644 %{repo_root}/linux/trayvoha_app.py \
+    %{buildroot}%{appdir}/trayvoha_app.py
 install -m 0644 %{repo_root}/linux/districts.json \
     %{buildroot}%{appdir}/districts.json
 install -m 0644 %{repo_root}/linux/trayvoha.svg \

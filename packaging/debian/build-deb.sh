@@ -36,6 +36,8 @@ sed "s/@VERSION@/$version/g" \
 
 install -m 0755 "$repo_root/linux/trayvoha.py" \
     "$package_root/usr/lib/trayvoha/trayvoha.py"
+install -m 0644 "$repo_root/linux/trayvoha_app.py" \
+    "$package_root/usr/lib/trayvoha/trayvoha_app.py"
 install -m 0644 "$repo_root/linux/districts.json" \
     "$package_root/usr/lib/trayvoha/districts.json"
 install -m 0644 "$repo_root/linux/trayvoha.svg" \

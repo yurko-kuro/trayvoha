@@ -36,6 +36,7 @@ fi
 
 mkdir -p "$install_dir" "$bin_dir" "$applications_dir" "$autostart_dir" "$log_dir"
 install -m 0755 "$script_dir/trayvoha.py" "$install_dir/trayvoha.py"
+install -m 0644 "$script_dir/trayvoha_app.py" "$install_dir/trayvoha_app.py"
 install -m 0644 "$script_dir/districts.json" "$install_dir/districts.json"
 install -m 0644 "$script_dir/trayvoha.svg" "$install_dir/trayvoha.svg"
 install -m 0644 "$script_dir/trayvoha-normal.svg" "$install_dir/trayvoha-normal.svg"
