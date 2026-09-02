@@ -193,6 +193,25 @@ jobs:
             exit 1
           fi
 
+      - name: Bounded NEPTUN response invariant
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'private const int MaxResponseBytes = 1_048_576;' NeptunAlertsClient.cs >/dev/null
+          grep -F 'HttpCompletionOption.ResponseHeadersRead' NeptunAlertsClient.cs >/dev/null
+          grep -F 'MaxResponseBytes + 1' NeptunAlertsClient.cs >/dev/null
+          grep -F 'MAX_RESPONSE_BYTES = 1_048_576' linux/trayvoha.py >/dev/null
+          grep -F 'response.read(MAX_RESPONSE_BYTES + 1)' linux/trayvoha.py >/dev/null
+
+          if grep -F 'GetFromJsonAsync' NeptunAlertsClient.cs; then
+            echo 'ПОМИЛКА: Windows runtime знову читає JSON без явної межі.' >&2
+            exit 1
+          fi
+          if grep -F 'json.load(response)' linux/trayvoha.py; then
+            echo 'ПОМИЛКА: Linux runtime знову читає JSON без явної межі.' >&2
+            exit 1
+          fi
+
       - name: Build Debian package
         shell: bash
         run: |
