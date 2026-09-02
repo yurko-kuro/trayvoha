@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal static class AutostartService
 {

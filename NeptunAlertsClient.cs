@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal sealed class NeptunAlertsClient : IDisposable
 {

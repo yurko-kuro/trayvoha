@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal sealed class AlertsResponse
 {

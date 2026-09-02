@@ -1,7 +1,7 @@
 using Microsoft.Win32;
 using System.Drawing;
 
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal sealed record AppPalette(
     Color WindowBackground,

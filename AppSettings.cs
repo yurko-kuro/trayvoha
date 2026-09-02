@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal sealed class AppSettings
 {

@@ -1,4 +1,4 @@
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal static class Program
 {

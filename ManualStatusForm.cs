@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace NeptunTray;
+namespace TrayVoha;
 
 internal sealed class ManualStatusForm : Form
 {
