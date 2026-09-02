@@ -28,7 +28,6 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private int _consecutiveFailures;
     private ManualStatusForm? _manualStatusForm;
     private bool _manualStatusRequested;
-    private DateTime _lastTrayLeftClickUtc = DateTime.MinValue;
 
     public TrayApplicationContext()
     {
@@ -96,17 +95,10 @@ internal sealed class TrayApplicationContext : ApplicationContext
             ContextMenuStrip = menu,
             Visible = true,
         };
-        _notifyIcon.MouseClick += async (_, eventArgs) =>
+        _notifyIcon.MouseDoubleClick += async (_, eventArgs) =>
         {
             if (eventArgs.Button == MouseButtons.Left)
             {
-                var now = DateTime.UtcNow;
-                if ((now - _lastTrayLeftClickUtc).TotalMilliseconds < 600)
-                {
-                    return;
-                }
-
-                _lastTrayLeftClickUtc = now;
                 await CheckFromTrayAsync();
             }
         };

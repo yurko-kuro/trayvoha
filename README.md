@@ -17,24 +17,31 @@
 ## Документація
 
 - [Короткий бриф](docs/BRIEF.md)
+- [Інструкція користувача](docs/USER_GUIDE.md)
 - [Модель безпеки](docs/SECURITY.md)
 - [Джерело даних NEPTUN](docs/NEPTUN.md)
+- [Релізи та артефакти](docs/RELEASES.md)
 
 ## Завантаження
 
 Перевірені збірки публікуються в розділі [Releases](https://github.com/yurko-kuro/trayvoha/releases).
 
-Канонічні назви артефактів релізів:
+Поточний реліз `v1.4.0` є історичним legacy-релізом зі старими назвами. Канонічний релізний цикл TrayVoha починається з версії `1.5.0` після завершення фінальної перевірки.
 
-- `TrayVoha-Windows.zip` — Windows;
+Канонічні назви артефактів:
+
+- `TrayVoha-Windows.zip` — переносна Windows-збірка;
+- `TrayVoha-Setup-x64.exe` — Windows installer;
 - `TrayVoha-Linux.zip` — переносна Linux-версія;
 - `trayvoha_<version>_all.deb` — Ubuntu/Debian;
-- `trayvoha-<version>-1.noarch.rpm` — Fedora;
+- `trayvoha-<version>-1.noarch.rpm` — Fedora/RPM;
 - `TrayVoha-macOS.zip` — macOS.
 
 ## Windows
 
 Windows-збірка self-contained і не потребує окремого встановлення .NET. Також передбачений звичайний installer.
+
+Подвійний лівий клік по значку TrayVoha показує поточний стан, правий клік відкриває меню.
 
 ## Linux
 
@@ -60,6 +67,8 @@ chmod +x install.sh uninstall.sh
 ## macOS
 
 macOS-версія є нативним menu-bar застосунком на Swift/AppKit і використовує системні механізми сповіщень, теми та автозапуску.
+
+CI збирає справжній `TrayVoha.app` та пакує його в `TrayVoha-macOS.zip`. Поточна CI-збірка підписується ad-hoc для перевірки цілісності; production-розповсюдження потребує Developer ID signing і notarization.
 
 ## Дані та приватність
 

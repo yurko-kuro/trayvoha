@@ -1,0 +1,101 @@
+name: TrayVoha Linux packages CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  packages:
+    name: Linux пакети та переносна збірка
+    runs-on: ubuntu-latest
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Підготувати Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Встановити інструменти пакування
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rpm zip
+
+      - name: Перевірити вихідні файли Linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile linux/trayvoha.py linux/trayvoha_app.py
+          bash -n linux/install.sh
+          bash -n linux/uninstall.sh
+          bash -n packaging/debian/build-deb.sh
+          bash -n packaging/rpm/build-rpm.sh
+
+      - name: Зібрати Debian-пакет
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/dist-linux"
+          ./packaging/debian/build-deb.sh 1.5.0 "$PWD/dist-linux"
+          test -s "$PWD/dist-linux/trayvoha_1.5.0_all.deb"
+          dpkg-deb --info "$PWD/dist-linux/trayvoha_1.5.0_all.deb" >/dev/null
+          test "$(dpkg-deb -f "$PWD/dist-linux/trayvoha_1.5.0_all.deb" Package)" = 'trayvoha'
+          test "$(dpkg-deb -f "$PWD/dist-linux/trayvoha_1.5.0_all.deb" Version)" = '1.5.0'
+
+      - name: Зібрати RPM-пакет
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./packaging/rpm/build-rpm.sh "$PWD/dist-linux"
+          rpm_path="$(find "$PWD/dist-linux" -type f -name 'trayvoha-1.5.0-1.noarch.rpm' -print -quit)"
+          test -n "$rpm_path"
+          test -s "$rpm_path"
+          test "$(rpm -qp --qf '%{NAME}' "$rpm_path")" = 'trayvoha'
+          test "$(rpm -qp --qf '%{VERSION}' "$rpm_path")" = '1.5.0'
+
+      - name: Зібрати переносний Linux ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          portable="$PWD/dist-linux/TrayVoha-Linux"
+          mkdir -p "$portable"
+          install -m 0755 linux/trayvoha.py "$portable/trayvoha.py"
+          install -m 0644 linux/trayvoha_app.py "$portable/trayvoha_app.py"
+          install -m 0644 linux/districts.json "$portable/districts.json"
+          install -m 0644 linux/trayvoha.svg "$portable/trayvoha.svg"
+          install -m 0644 linux/trayvoha-normal.svg "$portable/trayvoha-normal.svg"
+          install -m 0644 linux/trayvoha-alert.svg "$portable/trayvoha-alert.svg"
+          install -m 0644 linux/trayvoha-unknown.svg "$portable/trayvoha-unknown.svg"
+          install -m 0755 linux/install.sh "$portable/install.sh"
+          install -m 0755 linux/uninstall.sh "$portable/uninstall.sh"
+          (
+            cd "$PWD/dist-linux"
+            zip -qr TrayVoha-Linux.zip TrayVoha-Linux
+          )
+          test -s "$PWD/dist-linux/TrayVoha-Linux.zip"
+
+      - name: Контрольні суми Linux-артефактів
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PWD/dist-linux"
+          sha256sum TrayVoha-Linux.zip trayvoha_1.5.0_all.deb */trayvoha-1.5.0-1.noarch.rpm | tee SHA256SUMS.txt
+
+      - name: Завантажити Linux-артефакти
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrayVoha-Linux-ci
+          path: |
+            dist-linux/TrayVoha-Linux.zip
+            dist-linux/trayvoha_1.5.0_all.deb
+            dist-linux/**/*.rpm
+            dist-linux/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
