@@ -15,6 +15,7 @@ urllib.request.install_opener(
     urllib.request.build_opener(NoRedirectHandler())
 )
 
+from trayvoha_app import main
 import trayvoha_app
 
 
