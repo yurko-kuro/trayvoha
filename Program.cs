@@ -2,7 +2,7 @@ namespace NeptunTray;
 
 internal static class Program
 {
-    private const string MutexName = @"Local\AlertTray.SingleInstance";
+    private const string MutexName = @"Local\TrayVoha.SingleInstance";
 
     [STAThread]
     private static void Main()
