@@ -12,6 +12,8 @@ jobs:
   windows:
     name: Windows build
     runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -88,7 +90,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -n -E 'AlertTray|NeptunTray|Tryvoha'; then
+          matches="$(git grep -n -E 'AlertTray|NeptunTray|Tryvoha' -- ':!.github/**' || true)"
+          if [ -n "$matches" ]; then
+            printf '%s\n' "$matches"
             echo 'ПОМИЛКА: знайдено legacy product identifier.' >&2
             exit 1
           fi
