@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=TrayVoha
+Comment=Сповіщення про повітряні тривоги для вибраних територій
+Exec=/usr/bin/trayvoha
+Icon=trayvoha
+Terminal=false
+NoDisplay=true
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
+
