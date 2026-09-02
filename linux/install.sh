@@ -37,6 +37,7 @@ fi
 mkdir -p "$install_dir" "$bin_dir" "$applications_dir" "$autostart_dir" "$log_dir"
 install -m 0755 "$script_dir/tryvoha.py" "$install_dir/tryvoha.py"
 install -m 0644 "$script_dir/districts.json" "$install_dir/districts.json"
+install -m 0644 "$script_dir/tryvoha.svg" "$install_dir/tryvoha.svg"
 install -m 0644 "$script_dir/tryvoha-normal.svg" "$install_dir/tryvoha-normal.svg"
 install -m 0644 "$script_dir/tryvoha-alert.svg" "$install_dir/tryvoha-alert.svg"
 
@@ -51,7 +52,7 @@ write_desktop_file() {
         echo "Name=Тривога"
         echo "Comment=Сповіщення про повітряні тривоги для вибраних територій"
         printf 'Exec=python3 "%s/tryvoha.py"\n' "$install_dir"
-        printf 'Icon=%s/tryvoha-normal.svg\n' "$install_dir"
+        printf 'Icon=%s/tryvoha.svg\n' "$install_dir"
         echo "Terminal=false"
         echo "Categories=Utility;"
         echo "StartupNotify=false"
@@ -85,4 +86,3 @@ echo ""
 echo "ГОТОВО: Тривогу встановлено та додано до автозапуску."
 echo "Команда запуску: $bin_dir/tryvoha"
 echo "Автозапуск: $autostart_file"
-
