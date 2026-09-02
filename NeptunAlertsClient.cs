@@ -1,10 +1,11 @@
-using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace TrayVoha;
 
 internal sealed class NeptunAlertsClient : IDisposable
 {
     private const string Endpoint = "https://neptun.in.ua/api/v1/alerts";
+    private const int MaxResponseBytes = 1_048_576;
     private readonly HttpClient _httpClient;
 
     public NeptunAlertsClient()
@@ -20,7 +21,23 @@ internal sealed class NeptunAlertsClient : IDisposable
         IReadOnlyCollection<string> selectedAreaKeys,
         CancellationToken cancellationToken)
     {
-        var response = await _httpClient.GetFromJsonAsync<AlertsResponse>(Endpoint, cancellationToken)
+        using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint);
+        using var responseMessage = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        responseMessage.EnsureSuccessStatusCode();
+
+        if (responseMessage.Content.Headers.ContentLength is long contentLength
+            && contentLength > MaxResponseBytes)
+        {
+            throw new InvalidOperationException("Джерело даних повернуло завелику відповідь.");
+        }
+
+        await using var responseStream = await responseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        var responseBytes = await ReadBoundedAsync(responseStream, cancellationToken);
+        var response = JsonSerializer.Deserialize<AlertsResponse>(responseBytes)
             ?? throw new InvalidOperationException("Джерело даних повернуло порожню відповідь.");
 
         var activeAreas = new List<ActiveArea>();
@@ -43,6 +60,36 @@ internal sealed class NeptunAlertsClient : IDisposable
             fingerprintParts.OrderBy(value => value, StringComparer.Ordinal));
 
         return new AlertState(fingerprint, activeAreas);
+    }
+
+    private static async Task<byte[]> ReadBoundedAsync(
+        Stream stream,
+        CancellationToken cancellationToken)
+    {
+        using var buffer = new MemoryStream(capacity: MaxResponseBytes);
+        var chunk = new byte[16 * 1024];
+        var remaining = MaxResponseBytes + 1;
+
+        while (remaining > 0)
+        {
+            var read = await stream.ReadAsync(
+                chunk.AsMemory(0, Math.Min(chunk.Length, remaining)),
+                cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            buffer.Write(chunk, 0, read);
+            remaining -= read;
+        }
+
+        if (buffer.Length > MaxResponseBytes)
+        {
+            throw new InvalidOperationException("Джерело даних повернуло завелику відповідь.");
+        }
+
+        return buffer.ToArray();
     }
 
     private static void AddOblastState(
