@@ -1,0 +1,93 @@
+name: TrayVoha macOS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: Збірка macOS та інваріанти безпеки
+    runs-on: macos-latest
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Перевірити shell-синтаксис
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n macos/build-app.sh
+
+      - name: Перевірити мережевий контракт macOS
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir='macos/Sources/TrayVohaMac'
+
+          grep -F 'https://neptun.in.ua/api/v1/alerts' "$source_dir/Core.swift" >/dev/null
+          if grep -R -n -E 'https?://' "$source_dir" | grep -v -F 'https://neptun.in.ua/api/v1/alerts'; then
+            echo 'ПОМИЛКА: macOS runtime містить додатковий зовнішній URL.' >&2
+            exit 1
+          fi
+
+          grep -F 'willPerformHTTPRedirection' "$source_dir/Network.swift" >/dev/null
+          grep -F 'completionHandler(nil)' "$source_dir/Network.swift" >/dev/null
+
+          grep -F 'let maxResponseBytes = 1_048_576' "$source_dir/Core.swift" >/dev/null
+          grep -F 'response.expectedContentLength > Int64(maxResponseBytes)' "$source_dir/Network.swift" >/dev/null
+          grep -F 'state.data.count + data.count > maxResponseBytes' "$source_dir/Network.swift" >/dev/null
+          grep -F 'URLRequest(url: neptunEndpoint)' "$source_dir/Network.swift" >/dev/null
+
+      - name: Перевірити відсутність геолокації та браузера
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'CoreLocation|CLLocation|NSLocation|Geolocation|GPS|latitude|longitude|ipgeolocation|ip-api|ipinfo|WKWebView|SFSafari|NSWorkspace\.shared\.open' macos/Sources; then
+            echo 'ПОМИЛКА: у macOS runtime знайдено заборонений browser/location механізм.' >&2
+            exit 1
+          fi
+
+      - name: Зібрати Swift-код
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift --version
+          swift build --package-path macos -c release
+
+      - name: Зібрати TrayVoha.app
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./macos/build-app.sh "$PWD/dist-ci-macos"
+
+          app="$PWD/dist-ci-macos/TrayVoha.app"
+          zip="$PWD/dist-ci-macos/TrayVoha-macOS.zip"
+
+          test -x "$app/Contents/MacOS/TrayVoha"
+          test -s "$app/Contents/Resources/districts.json"
+          test -s "$app/Contents/Resources/trayvoha.icns"
+          test -s "$zip"
+
+          test "$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")" = 'ua.yurkokuro.trayvoha'
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")" = '1.5.0'
+          test "$(plutil -extract LSUIElement raw -o - "$app/Contents/Info.plist")" = 'true'
+
+          if plutil -p "$app/Contents/Info.plist" | grep -E 'NSLocation|LocationUsage'; then
+            echo 'ПОМИЛКА: Info.plist містить дозвіл або опис доступу до геолокації.' >&2
+            exit 1
+          fi
+
+          codesign --verify --deep --strict "$app"
+          shasum -a 256 "$zip"
+
+      - name: Завантажити macOS-артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrayVoha-macOS-ci
+          path: dist-ci-macos/TrayVoha-macOS.zip
+          if-no-files-found: error
+          retention-days: 14
