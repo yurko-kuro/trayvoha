@@ -4,7 +4,7 @@ set -euo pipefail
 
 script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 repo_root="$(CDPATH= cd -- "$script_dir/../.." && pwd)"
-version="${1:-1.4.0}"
+version="${1:-1.5.0}"
 output_dir="${2:-$repo_root/dist}"
 
 case "$version" in

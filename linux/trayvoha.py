@@ -344,7 +344,7 @@ class TrayVohaApp:
 
     def _fetch_worker(self, selected: list[str], force: bool):
         try:
-            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "TrayVoha/1.4.0"})
+            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "TrayVoha/1.5.0"})
             with urllib.request.urlopen(request, timeout=8) as response:
                 payload = json.load(response)
             state = self._compute_state(payload, selected)

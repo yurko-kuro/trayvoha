@@ -10,7 +10,7 @@ sudo dnf install rpm-build
 Встановлення готового пакета:
 
 ```bash
-sudo dnf install ./trayvoha-1.4.0-1.noarch.rpm
+sudo dnf install ./trayvoha-1.5.0-1.noarch.rpm
 ```
 
 Пакет встановлює TrayVoha системно, додає його до меню та вмикає автозапуск для графічних сесій.

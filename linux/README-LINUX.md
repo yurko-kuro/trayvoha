@@ -5,13 +5,13 @@ TrayVoha для Ubuntu, Debian і Fedora працює у системному т
 ## Ubuntu та Debian: пакет
 
 ```bash
-sudo apt install ./trayvoha_1.4.0_all.deb
+sudo apt install ./trayvoha_1.5.0_all.deb
 ```
 
 ## Fedora: пакет
 
 ```bash
-sudo dnf install ./trayvoha-1.4.0-1.noarch.rpm
+sudo dnf install ./trayvoha-1.5.0-1.noarch.rpm
 ```
 
 Пакетний менеджер автоматично встановить залежності. TrayVoha буде доступний у меню та запускатиметься після входу до графічної сесії.

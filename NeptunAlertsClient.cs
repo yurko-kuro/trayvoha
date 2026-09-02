@@ -13,7 +13,7 @@ internal sealed class NeptunAlertsClient : IDisposable
         {
             Timeout = TimeSpan.FromSeconds(8),
         };
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TrayVoha/1.3.8");
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("TrayVoha/1.5.0");
     }
 
     public async Task<AlertState> GetStateAsync(

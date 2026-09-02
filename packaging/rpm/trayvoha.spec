@@ -1,5 +1,5 @@
 Name:           trayvoha
-Version:        1.4.0
+Version:        1.5.0
 Release:        1
 Summary:        Сповіщення про повітряні тривоги у системному треї
 License:        LicenseRef-Proprietary
@@ -60,5 +60,8 @@ install -m 0644 %{repo_root}/linux/trayvoha.svg \
 %config(noreplace) %{_sysconfdir}/xdg/autostart/trayvoha.desktop
 
 %changelog
+* Wed Sep 02 2026 Yurii Chornyi <yurko.kuro@gmail.com> - 1.5.0-1
+- Перейменовано продукт на TrayVoha та посилено runtime hardening
+
 * Wed Sep 02 2026 Yurii Chornyi <yurko.kuro@gmail.com> - 1.4.0-1
 - Перейменовано продукт на TrayVoha
