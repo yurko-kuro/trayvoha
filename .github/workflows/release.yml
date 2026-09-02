@@ -167,7 +167,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          portable="$PWD/dist-release/TrayVoha-Linux"
+          release_dir="$PWD/dist-release"
+          portable="$release_dir/TrayVoha-Linux"
           mkdir -p "$portable"
           install -m 0755 linux/trayvoha.py "$portable/trayvoha.py"
           install -m 0644 linux/trayvoha_app.py "$portable/trayvoha_app.py"
@@ -179,11 +180,14 @@ jobs:
           install -m 0755 linux/install.sh "$portable/install.sh"
           install -m 0755 linux/uninstall.sh "$portable/uninstall.sh"
           (
-            cd "$PWD/dist-release"
+            cd "$release_dir"
             zip -qr TrayVoha-Linux.zip TrayVoha-Linux
-            sha256sum TrayVoha-Linux.zip trayvoha_1.0.0_all.deb trayvoha-1.0.0-1.noarch.rpm > SHA256SUMS-Linux.txt
           )
           rm -rf "$portable"
+          (
+            cd "$release_dir"
+            sha256sum TrayVoha-Linux.zip trayvoha_1.0.0_all.deb trayvoha-1.0.0-1.noarch.rpm > SHA256SUMS-Linux.txt
+          )
 
       - name: Завантажити Linux release-артефакти
         uses: actions/upload-artifact@v4
