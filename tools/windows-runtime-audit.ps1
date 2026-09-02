@@ -79,7 +79,7 @@ try {
 
         $sample = @(Get-NetTCPConnection -OwningProcess $p.Id -ErrorAction SilentlyContinue)
         foreach ($connection in $sample) {
-            if ($connection.State -ne 'Listen') {
+            if ($connection.State -ne 'Listen' -and [int]$connection.RemotePort -gt 0) {
                 $observedTcp.Add([pscustomobject]@{
                     State = [string]$connection.State
                     LocalAddress = [string]$connection.LocalAddress
@@ -151,6 +151,7 @@ try {
     }
 
     'NetworkInvariant=ONLY_NEPTUN_443' | Add-Content -Encoding utf8 $report
+    'AuditResult=PASS' | Add-Content -Encoding utf8 $report
 }
 catch {
     'AuditResult=FAIL' | Add-Content -Encoding utf8 $report
