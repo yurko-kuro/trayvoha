@@ -1,5 +1,3 @@
-$ErrorActionPreference = 'Stop'
-
 param(
     [Parameter(Mandatory = $false)]
     [string]$ExePath = '.\dist-ci\TrayVoha.exe',
@@ -7,6 +5,8 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$ReportPath = '.\dist-ci\runtime-audit.txt'
 )
+
+$ErrorActionPreference = 'Stop'
 
 $exe = (Resolve-Path $ExePath).Path
 $report = [System.IO.Path]::GetFullPath($ReportPath)
@@ -124,7 +124,7 @@ try {
         throw 'TrayVoha відкрив UDP endpoint.'
     }
     if ($uniqueTcp.Count -eq 0) {
-        throw 'Не зафіксовано жодного вихідного TCP-з’єднання TrayVoha.'
+        throw "Не зафіксовано жодного вихідного TCP-з’єднання TrayVoha."
     }
 
     $unexpected = @(
@@ -139,10 +139,10 @@ try {
             Format-Table -AutoSize |
             Out-String |
             Add-Content -Encoding utf8 $report
-        throw 'TrayVoha встановив TCP-з’єднання не з дозволеним NEPTUN:443.'
+        throw "TrayVoha встановив TCP-з’єднання не з дозволеним NEPTUN:443."
     }
 
-    "NetworkInvariant=ONLY_NEPTUN_443" | Add-Content -Encoding utf8 $report
+    'NetworkInvariant=ONLY_NEPTUN_443' | Add-Content -Encoding utf8 $report
 }
 finally {
     if (-not $p.HasExited) {
