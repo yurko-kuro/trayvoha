@@ -19,7 +19,6 @@ jobs:
     steps:
       - name: Отримати репозиторій
         uses: actions/checkout@v4
-
       - name: Звірити версію 1.0.0
         shell: bash
         env:
@@ -102,6 +101,10 @@ jobs:
     steps:
       - name: Отримати репозиторій
         uses: actions/checkout@v4
+      - name: Підготувати Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Встановити інструменти пакування
         shell: bash
         run: |
@@ -179,7 +182,10 @@ jobs:
           grep -F 'willPerformHTTPRedirection' "$source_dir/Network.swift" >/dev/null
           grep -F 'completionHandler(nil)' "$source_dir/Network.swift" >/dev/null
           grep -F 'let maxResponseBytes = 1_048_576' "$source_dir/Core.swift" >/dev/null
-          if grep -R -n -E 'CoreLocation|CLLocation|NSLocation|Geolocation|GPS|latitude|longitude|ipgeolocation|ip-api|ipinfo|WKWebView|SFSafari|NSWorkspace\.shared\.open' macos/Sources; then exit 1; fi
+          if grep -R -n -E 'CoreLocation|CLLocation|NSLocation|Geolocation|GPS|latitude|longitude|ipgeolocation|ip-api|ipinfo|WKWebView|SFSafari|NSWorkspace\.shared\.open' macos/Sources; then
+            echo 'ПОМИЛКА: у macOS runtime знайдено заборонений browser/location механізм.' >&2
+            exit 1
+          fi
       - name: Зібрати TrayVoha.app, ZIP і DMG
         shell: bash
         run: |
