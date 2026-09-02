@@ -1,0 +1,297 @@
+name: TrayVoha draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Версія релізу
+        required: true
+        default: '1.5.0'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Перевірити релізну версію
+    runs-on: ubuntu-latest
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Звірити версію 1.5.0
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          test "$VERSION" = '1.5.0'
+          grep -F '<Version>1.5.0</Version>' TrayVoha.csproj >/dev/null
+          grep -F '#define MyAppVersion "1.5.0"' packaging/windows/TrayVoha.iss >/dev/null
+          grep -E '^Version:[[:space:]]+1\.5\.0$' packaging/rpm/trayvoha.spec >/dev/null
+          grep -F '<string>1.5.0</string>' macos/build-app.sh >/dev/null
+          grep -F '# TrayVoha 1.5.0' docs/RELEASE_NOTES_1.5.0.md >/dev/null
+
+  windows:
+    name: Зібрати й перевірити Windows
+    needs: preflight
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Підготувати .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Підготувати Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Згенерувати іконки
+        run: python tools/generate-icon-assets.py
+
+      - name: Зібрати Windows із warnings-as-errors
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet restore .\TrayVoha.csproj
+          dotnet build .\TrayVoha.csproj --configuration Release --no-restore -warnaserror
+          dotnet publish .\TrayVoha.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            --output .\dist-ci
+          if (-not (Test-Path .\dist-ci\TrayVoha.exe)) { throw 'TrayVoha.exe не створено.' }
+          if ((Get-Item .\dist-ci\TrayVoha.exe).Length -le 0) { throw 'TrayVoha.exe порожній.' }
+
+      - name: Перевірити runtime-мережу Windows
+        shell: pwsh
+        run: .\tools\windows-runtime-audit.ps1
+
+      - name: Зібрати Windows installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidates = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup --no-progress -y
+            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $iscc) { throw 'Inno Setup compiler не знайдено.' }
+          & $iscc .\packaging\windows\TrayVoha.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup завершився з кодом $LASTEXITCODE" }
+          if (-not (Test-Path .\dist-installer\TrayVoha-Setup-x64.exe)) { throw 'Installer не створено.' }
+
+      - name: Перевірити встановлення та видалення Windows
+        shell: pwsh
+        run: .\tools\windows-installer-audit.ps1
+
+      - name: Підготувати Windows-артефакти
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force .\dist-release | Out-Null
+          Compress-Archive -Path .\dist-ci\TrayVoha.exe -DestinationPath .\dist-release\TrayVoha-Windows.zip -Force
+          Copy-Item .\dist-installer\TrayVoha-Setup-x64.exe .\dist-release\TrayVoha-Setup-x64.exe
+          Copy-Item .\dist-ci\runtime-audit.txt .\dist-release\windows-runtime-audit.txt
+          Copy-Item .\dist-ci\installer-audit.txt .\dist-release\windows-installer-audit.txt
+          Get-FileHash .\dist-release\TrayVoha-Windows.zip -Algorithm SHA256
+          Get-FileHash .\dist-release\TrayVoha-Setup-x64.exe -Algorithm SHA256
+
+      - name: Завантажити Windows release-артефакти
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: dist-release/*
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    name: Зібрати й перевірити Linux
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Підготувати Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Встановити інструменти пакування
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rpm zip
+
+      - name: Перевірити Linux runtime та пакування
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile linux/trayvoha.py linux/trayvoha_app.py
+          bash -n linux/install.sh
+          bash -n linux/uninstall.sh
+          bash -n packaging/debian/build-deb.sh
+          bash -n packaging/rpm/build-rpm.sh
+          grep -F 'https://neptun.in.ua/api/v1/alerts' linux/trayvoha_app.py >/dev/null
+          grep -F 'class NoRedirectHandler' linux/trayvoha.py >/dev/null
+          grep -F 'MAX_RESPONSE_BYTES = 1_048_576' linux/trayvoha_app.py >/dev/null
+
+      - name: Зібрати Debian і RPM
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/dist-release"
+          ./packaging/debian/build-deb.sh 1.5.0 "$PWD/dist-release"
+          ./packaging/rpm/build-rpm.sh "$PWD/dist-release"
+          test -s "$PWD/dist-release/trayvoha_1.5.0_all.deb"
+          rpm_path="$(find "$PWD/dist-release" -type f -name 'trayvoha-1.5.0-1.noarch.rpm' -print -quit)"
+          test -n "$rpm_path"
+          test -s "$rpm_path"
+          cp "$rpm_path" "$PWD/dist-release/trayvoha-1.5.0-1.noarch.rpm"
+
+      - name: Зібрати переносний Linux ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          portable="$PWD/dist-release/TrayVoha-Linux"
+          mkdir -p "$portable"
+          install -m 0755 linux/trayvoha.py "$portable/trayvoha.py"
+          install -m 0644 linux/trayvoha_app.py "$portable/trayvoha_app.py"
+          install -m 0644 linux/districts.json "$portable/districts.json"
+          install -m 0644 linux/trayvoha.svg "$portable/trayvoha.svg"
+          install -m 0644 linux/trayvoha-normal.svg "$portable/trayvoha-normal.svg"
+          install -m 0644 linux/trayvoha-alert.svg "$portable/trayvoha-alert.svg"
+          install -m 0644 linux/trayvoha-unknown.svg "$portable/trayvoha-unknown.svg"
+          install -m 0755 linux/install.sh "$portable/install.sh"
+          install -m 0755 linux/uninstall.sh "$portable/uninstall.sh"
+          (
+            cd "$PWD/dist-release"
+            zip -qr TrayVoha-Linux.zip TrayVoha-Linux
+          )
+          rm -rf "$portable"
+          sha256sum TrayVoha-Linux.zip trayvoha_1.5.0_all.deb trayvoha-1.5.0-1.noarch.rpm > SHA256SUMS-Linux.txt
+
+      - name: Завантажити Linux release-артефакти
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: |
+            dist-release/TrayVoha-Linux.zip
+            dist-release/trayvoha_1.5.0_all.deb
+            dist-release/trayvoha-1.5.0-1.noarch.rpm
+            dist-release/SHA256SUMS-Linux.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: Зібрати й перевірити macOS
+    needs: preflight
+    runs-on: macos-latest
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Перевірити security-контракт macOS
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir='macos/Sources/TrayVohaMac'
+          grep -F 'https://neptun.in.ua/api/v1/alerts' "$source_dir/Core.swift" >/dev/null
+          grep -F 'willPerformHTTPRedirection' "$source_dir/Network.swift" >/dev/null
+          grep -F 'completionHandler(nil)' "$source_dir/Network.swift" >/dev/null
+          grep -F 'let maxResponseBytes = 1_048_576' "$source_dir/Core.swift" >/dev/null
+          if grep -R -n -E 'CoreLocation|CLLocation|NSLocation|Geolocation|GPS|latitude|longitude|ipgeolocation|ip-api|ipinfo|WKWebView|SFSafari|NSWorkspace\.shared\.open' macos/Sources; then
+            echo 'ПОМИЛКА: у macOS runtime знайдено заборонений browser/location механізм.' >&2
+            exit 1
+          fi
+
+      - name: Зібрати TrayVoha.app
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build --package-path macos -c release
+          ./macos/build-app.sh "$PWD/dist-release"
+          test -s "$PWD/dist-release/TrayVoha-macOS.zip"
+          codesign --verify --deep --strict "$PWD/dist-release/TrayVoha.app"
+          shasum -a 256 "$PWD/dist-release/TrayVoha-macOS.zip" > "$PWD/dist-release/SHA256SUMS-macOS.txt"
+
+      - name: Завантажити macOS release-артефакти
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: |
+            dist-release/TrayVoha-macOS.zip
+            dist-release/SHA256SUMS-macOS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    name: Створити чернетку GitHub Release
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Отримати репозиторій
+        uses: actions/checkout@v4
+
+      - name: Завантажити перевірені артефакти
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Перевірити комплект релізу
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-assets
+          test -s TrayVoha-Windows.zip
+          test -s TrayVoha-Setup-x64.exe
+          test -s TrayVoha-Linux.zip
+          test -s trayvoha_1.5.0_all.deb
+          test -s trayvoha-1.5.0-1.noarch.rpm
+          test -s TrayVoha-macOS.zip
+          sha256sum \
+            TrayVoha-Windows.zip \
+            TrayVoha-Setup-x64.exe \
+            TrayVoha-Linux.zip \
+            trayvoha_1.5.0_all.deb \
+            trayvoha-1.5.0-1.noarch.rpm \
+            TrayVoha-macOS.zip | tee SHA256SUMS.txt
+
+      - name: Створити лише draft release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "v${VERSION}" \
+            release-assets/TrayVoha-Windows.zip \
+            release-assets/TrayVoha-Setup-x64.exe \
+            release-assets/TrayVoha-Linux.zip \
+            release-assets/trayvoha_1.5.0_all.deb \
+            release-assets/trayvoha-1.5.0-1.noarch.rpm \
+            release-assets/TrayVoha-macOS.zip \
+            release-assets/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "TrayVoha v${VERSION}" \
+            --notes-file docs/RELEASE_NOTES_1.5.0.md \
+            --draft
