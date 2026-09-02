@@ -40,6 +40,7 @@ NORMAL_ICON = APP_DIR / "trayvoha-normal.svg"
 ALERT_ICON = APP_DIR / "trayvoha-alert.svg"
 UNKNOWN_ICON = APP_DIR / "trayvoha-unknown.svg"
 ALERTS_URL = "https://neptun.in.ua/api/v1/alerts"
+MAX_RESPONSE_BYTES = 1_048_576
 
 CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 SETTINGS_DIR = CONFIG_HOME / "trayvoha"
@@ -346,7 +347,15 @@ class TrayVohaApp:
         try:
             request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "TrayVoha/1.5.0"})
             with urllib.request.urlopen(request, timeout=8) as response:
-                payload = json.load(response)
+                content_length = response.headers.get("Content-Length")
+                if content_length is not None and int(content_length) > MAX_RESPONSE_BYTES:
+                    raise ValueError("Джерело даних повернуло завелику відповідь.")
+
+                response_bytes = response.read(MAX_RESPONSE_BYTES + 1)
+                if len(response_bytes) > MAX_RESPONSE_BYTES:
+                    raise ValueError("Джерело даних повернуло завелику відповідь.")
+
+                payload = json.loads(response_bytes)
             state = self._compute_state(payload, selected)
             GLib.idle_add(self._apply_state, state, selected, force)
         except Exception:
