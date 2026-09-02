@@ -147,7 +147,7 @@ jobs:
           python-version: '3.12'
 
       - name: Python syntax
-        run: python -m py_compile linux/trayvoha.py tools/generate-icon-assets.py
+        run: python -m py_compile linux/trayvoha.py linux/trayvoha_app.py tools/generate-icon-assets.py
 
       - name: Generate all icon assets
         run: python tools/generate-icon-assets.py
@@ -165,7 +165,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          matches="$(git grep -n -E 'AlertTray|NeptunTray|Tryvoha' -- ':!.github/**' || true)"
+          legacy_pattern="$(printf '%s|%s|%s' 'Alert''Tray' 'Neptun''Tray' 'Try''voha')"
+          matches="$(git grep -n -E "$legacy_pattern" -- ':!.git/**' || true)"
           if [ -n "$matches" ]; then
             printf '%s\n' "$matches"
             echo 'ПОМИЛКА: знайдено legacy product identifier.' >&2
@@ -186,12 +187,22 @@ jobs:
         run: |
           set -euo pipefail
           grep -F 'https://neptun.in.ua/api/v1/alerts' NeptunAlertsClient.cs >/dev/null
-          grep -F 'https://neptun.in.ua/api/v1/alerts' linux/trayvoha.py >/dev/null
+          grep -F 'https://neptun.in.ua/api/v1/alerts' linux/trayvoha_app.py >/dev/null
 
-          if grep -E 'https?://' NeptunAlertsClient.cs linux/trayvoha.py | grep -v -F 'https://neptun.in.ua/api/v1/alerts'; then
+          if grep -E 'https?://' NeptunAlertsClient.cs linux/trayvoha.py linux/trayvoha_app.py | grep -v -F 'https://neptun.in.ua/api/v1/alerts'; then
             echo 'ПОМИЛКА: runtime source містить додатковий зовнішній URL.' >&2
             exit 1
           fi
+
+      - name: No runtime redirects
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'AllowAutoRedirect = false' NeptunAlertsClient.cs >/dev/null
+          grep -F 'class NoRedirectHandler' linux/trayvoha.py >/dev/null
+          grep -F 'urllib.request.install_opener' linux/trayvoha.py >/dev/null
+          grep -F 'urllib.request.build_opener(NoRedirectHandler())' linux/trayvoha.py >/dev/null
+          grep -F 'from trayvoha_app import main' linux/trayvoha.py >/dev/null
 
       - name: Bounded NEPTUN response invariant
         shell: bash
@@ -200,14 +211,14 @@ jobs:
           grep -F 'private const int MaxResponseBytes = 1_048_576;' NeptunAlertsClient.cs >/dev/null
           grep -F 'HttpCompletionOption.ResponseHeadersRead' NeptunAlertsClient.cs >/dev/null
           grep -F 'MaxResponseBytes + 1' NeptunAlertsClient.cs >/dev/null
-          grep -F 'MAX_RESPONSE_BYTES = 1_048_576' linux/trayvoha.py >/dev/null
-          grep -F 'response.read(MAX_RESPONSE_BYTES + 1)' linux/trayvoha.py >/dev/null
+          grep -F 'MAX_RESPONSE_BYTES = 1_048_576' linux/trayvoha_app.py >/dev/null
+          grep -F 'response.read(MAX_RESPONSE_BYTES + 1)' linux/trayvoha_app.py >/dev/null
 
           if grep -F 'GetFromJsonAsync' NeptunAlertsClient.cs; then
             echo 'ПОМИЛКА: Windows runtime знову читає JSON без явної межі.' >&2
             exit 1
           fi
-          if grep -F 'json.load(response)' linux/trayvoha.py; then
+          if grep -F 'json.load(response)' linux/trayvoha_app.py; then
             echo 'ПОМИЛКА: Linux runtime знову читає JSON без явної межі.' >&2
             exit 1
           fi
@@ -219,3 +230,4 @@ jobs:
           ./packaging/debian/build-deb.sh 1.5.0 "$PWD/dist-ci"
           test -s "$PWD/dist-ci/trayvoha_1.5.0_all.deb"
           dpkg-deb --info "$PWD/dist-ci/trayvoha_1.5.0_all.deb" >/dev/null
+          dpkg-deb --contents "$PWD/dist-ci/trayvoha_1.5.0_all.deb" | grep -F './usr/lib/trayvoha/trayvoha_app.py' >/dev/null
