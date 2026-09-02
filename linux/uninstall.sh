@@ -16,9 +16,9 @@ rm -f "$data_home/applications/tryvoha.desktop"
 rm -f "$config_home/autostart/tryvoha.desktop"
 rm -f "$install_dir/tryvoha.py"
 rm -f "$install_dir/districts.json"
+rm -f "$install_dir/tryvoha.svg"
 rm -f "$install_dir/tryvoha-normal.svg"
 rm -f "$install_dir/tryvoha-alert.svg"
 rmdir "$install_dir" 2>/dev/null || true
 
 echo "Тривогу видалено. Налаштування у $config_home/tryvoha збережено."
-
