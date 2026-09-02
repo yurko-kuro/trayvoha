@@ -15,5 +15,6 @@
     <PublishTrimmed>false</PublishTrimmed>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
+    <ApplicationIcon Condition="Exists('assets\windows\tryvoha.ico')">assets\windows\tryvoha.ico</ApplicationIcon>
   </PropertyGroup>
 </Project>
