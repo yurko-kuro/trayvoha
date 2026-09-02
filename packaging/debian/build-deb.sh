@@ -38,6 +38,8 @@ install -m 0755 "$repo_root/linux/tryvoha.py" \
     "$package_root/usr/lib/tryvoha/tryvoha.py"
 install -m 0644 "$repo_root/linux/districts.json" \
     "$package_root/usr/lib/tryvoha/districts.json"
+install -m 0644 "$repo_root/linux/tryvoha.svg" \
+    "$package_root/usr/lib/tryvoha/tryvoha.svg"
 install -m 0644 "$repo_root/linux/tryvoha-normal.svg" \
     "$package_root/usr/lib/tryvoha/tryvoha-normal.svg"
 install -m 0644 "$repo_root/linux/tryvoha-alert.svg" \
@@ -49,8 +51,8 @@ install -m 0644 "$script_dir/tryvoha.desktop" \
     "$package_root/usr/share/applications/tryvoha.desktop"
 install -m 0644 "$script_dir/tryvoha-autostart.desktop" \
     "$package_root/etc/xdg/autostart/tryvoha.desktop"
-install -m 0644 "$repo_root/linux/tryvoha-normal.svg" \
-    "$package_root/usr/share/icons/hicolor/scalable/apps/tryvoha-normal.svg"
+install -m 0644 "$repo_root/linux/tryvoha.svg" \
+    "$package_root/usr/share/icons/hicolor/scalable/apps/tryvoha.svg"
 
 mkdir -p "$output_dir"
 package_path="$output_dir/tryvoha-desktop_${version}_all.deb"
