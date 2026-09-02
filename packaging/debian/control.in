@@ -5,7 +5,7 @@ Priority: optional
 Architecture: all
 Maintainer: Yurii Chornyi <yurko.kuro@gmail.com>
 Depends: python3 (>= 3.10), python3-gi, gir1.2-gtk-3.0, gir1.2-ayatanaappindicator3-0.1 | gir1.2-appindicator3-0.1, libnotify-bin
-Homepage: https://github.com/yurko-kuro/tryvoha-desktop
+Homepage: https://github.com/yurko-kuro/tryvoha
 Description: Air-raid alerts in the system tray
  Тривога показує стан повітряних тривог для вибраних районів
  та областей України у системному треї Linux.
