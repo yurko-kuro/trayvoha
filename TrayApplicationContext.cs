@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -7,7 +6,6 @@ namespace NeptunTray;
 
 internal sealed class TrayApplicationContext : ApplicationContext
 {
-    private const string SourceUrl = "https://neptun.in.ua/";
     private const int PollIntervalMilliseconds = 10_000;
 
     private readonly NeptunAlertsClient _client = new();
@@ -15,6 +13,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private readonly NotifyIcon _notifyIcon;
     private readonly Icon _normalIcon;
     private readonly Icon _alertIcon;
+    private readonly Icon _unknownIcon;
     private readonly System.Windows.Forms.Timer _timer;
     private readonly ToolStripMenuItem _statusItem;
     private readonly ToolStripMenuItem _selectionSummaryItem;
@@ -39,11 +38,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
         catch
         {
-            // Autostart can still be changed later from the tray menu.
+            // Автозапуск можна змінити пізніше з меню TrayVoha.
         }
 
         _normalIcon = CreateTrayIcon(Color.FromArgb(55, 65, 80));
         _alertIcon = CreateTrayIcon(Color.FromArgb(205, 32, 48));
+        _unknownIcon = CreateTrayIcon(Color.FromArgb(217, 119, 6));
 
         _statusItem = new ToolStripMenuItem("Перевіряю стан…") { Enabled = false };
         _selectionSummaryItem = new ToolStripMenuItem("Території: …") { Enabled = false };
@@ -68,8 +68,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         };
         _autostartItem.Click += (_, _) => ToggleAutostart();
 
-        var sourceItem = new ToolStripMenuItem("Neptune");
-        sourceItem.Click += (_, _) => OpenSource();
+        var sourceItem = new ToolStripMenuItem("Джерело: NEPTUN") { Enabled = false };
 
         var exitItem = new ToolStripMenuItem("Вийти");
         exitItem.Click += (_, _) => ExitThread();
@@ -92,8 +91,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         _notifyIcon = new NotifyIcon
         {
-            Icon = _normalIcon,
-            Text = "Тривога — перевіряю стан",
+            Icon = _unknownIcon,
+            Text = "TrayVoha — перевіряю стан",
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -111,7 +110,6 @@ internal sealed class TrayApplicationContext : ApplicationContext
                 await CheckFromTrayAsync();
             }
         };
-        _notifyIcon.BalloonTipClicked += (_, _) => OpenSource();
 
         _timer = new System.Windows.Forms.Timer { Interval = 250 };
         _timer.Tick += OnTimerTick;
@@ -192,8 +190,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
         {
             const string noSelectionFingerprint = "selection:none";
             _statusItem.Text = "Не вибрано територій";
-            _notifyIcon.Icon = _normalIcon;
-            SetTooltip("Тривога — не вибрано територій");
+            _notifyIcon.Icon = _unknownIcon;
+            SetTooltip("TrayVoha — не вибрано територій");
 
             CompleteManualStatus(
                 "Території не вибрані",
@@ -250,8 +248,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
         {
             _consecutiveFailures++;
             _statusItem.Text = "Немає зв’язку з джерелом даних";
-            _notifyIcon.Icon = _normalIcon;
-            SetTooltip("Тривога — немає зв’язку");
+            _notifyIcon.Icon = _unknownIcon;
+            SetTooltip("TrayVoha — дані недоступні");
             CompleteManualStatus(
                 "Не вдалося оновити стан",
                 "Немає зв’язку з джерелом даних. Перевірка продовжиться автоматично.",
@@ -262,7 +260,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
                 _notifyIcon.ShowBalloonTip(
                     5_000,
                     "Дані тимчасово недоступні",
-                    "Не вдалося оновити стан тривоги. Перевірка продовжиться автоматично.",
+                    "Не вдалося оновити стан повітряної тривоги. Перевірка продовжиться автоматично.",
                     ToolTipIcon.Warning);
             }
         }
@@ -284,12 +282,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
         if (!state.IsActive)
         {
             _statusItem.Text = "Зараз: на вибраних територіях тривоги немає";
-            SetTooltip("На вибраних територіях тривоги немає");
+            SetTooltip("TrayVoha — тривоги немає");
             return;
         }
 
         _statusItem.Text = $"Зараз: тривога — {state.ActiveAreas.Count}";
-        SetTooltip($"Тривога: {JoinAreaNames(state.ActiveAreas)}");
+        SetTooltip($"TrayVoha — тривога: {JoinAreaNames(state.ActiveAreas)}");
     }
 
     private void ShowStateNotification(AlertState state, bool isAllClearTransition)
@@ -316,7 +314,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         return BuildActiveAlertLines(state)
             + Environment.NewLine
             + Environment.NewLine
-            + "Neptune";
+            + "Джерело: NEPTUN";
     }
 
     private string BuildSelectionNotification()
@@ -324,13 +322,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
         return BuildSelectionLines()
             + Environment.NewLine
             + Environment.NewLine
-            + "Neptune";
+            + "Джерело: NEPTUN";
     }
 
     private string BuildSelectionLines()
     {
         var lines = _settings.SelectedAreaKeys.Select(DisplayNameForSelection);
-
         return string.Join(Environment.NewLine, lines);
     }
 
@@ -429,16 +426,10 @@ internal sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
-    private static void OpenSource()
-    {
-        Process.Start(new ProcessStartInfo(SourceUrl) { UseShellExecute = true });
-    }
-
     private async Task CheckFromTrayAsync()
     {
         _manualStatusRequested = true;
         GetManualStatusForm().ShowChecking();
-
         await CheckAsync(forceNotification: false);
     }
 
@@ -528,6 +519,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon.Dispose();
         _normalIcon.Dispose();
         _alertIcon.Dispose();
+        _unknownIcon.Dispose();
         _manualStatusForm?.Dispose();
         _client.Dispose();
         _shutdown.Dispose();
