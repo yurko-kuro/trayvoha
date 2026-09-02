@@ -1,0 +1,95 @@
+name: Align TrayVoha version once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Align version metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          version = "1.5.0"
+
+          def edit(path_str, transform):
+              path = Path(path_str)
+              text = path.read_text(encoding="utf-8")
+              updated = transform(text)
+              if updated == text:
+                  print(f"Без змін: {path}")
+              else:
+                  path.write_text(updated, encoding="utf-8")
+                  print(f"Оновлено: {path}")
+
+          edit(
+              "TrayVoha.csproj",
+              lambda s: re.sub(r"<Version>[^<]+</Version>", f"<Version>{version}</Version>", s, count=1),
+          )
+          edit(
+              "NeptunAlertsClient.cs",
+              lambda s: re.sub(r'TrayVoha/\d+\.\d+\.\d+', f'TrayVoha/{version}', s),
+          )
+          edit(
+              "linux/trayvoha.py",
+              lambda s: re.sub(r'TrayVoha/\d+\.\d+\.\d+', f'TrayVoha/{version}', s),
+          )
+          edit(
+              "packaging/debian/build-deb.sh",
+              lambda s: re.sub(r'version="\$\{1:-[^}]+\}"', f'version="${{1:-{version}}}"', s, count=1),
+          )
+          edit(
+              "packaging/rpm/trayvoha.spec",
+              lambda s: s.replace("Version:        1.4.0", f"Version:        {version}", 1).replace(
+                  "%changelog\n",
+                  "%changelog\n* Wed Sep 02 2026 Yurii Chornyi <yurko.kuro@gmail.com> - 1.5.0-1\n- Перейменовано продукт на TrayVoha та посилено runtime hardening\n\n",
+                  1,
+              ),
+          )
+
+          for doc in (
+              "linux/README-LINUX.md",
+              "packaging/debian/README.md",
+              "packaging/rpm/README.md",
+          ):
+              edit(doc, lambda s: s.replace("1.4.0", version))
+
+          edit(
+              "tools/generate-icon-assets.py",
+              lambda s: s.replace("Готово: іконки Тривоги згенеровано", "Готово: іконки TrayVoha згенеровано"),
+          )
+          PY
+
+          test "$(grep -o '<Version>[^<]*</Version>' TrayVoha.csproj | head -n1)" = '<Version>1.5.0</Version>'
+          grep -F 'TrayVoha/1.5.0' NeptunAlertsClient.cs >/dev/null
+          grep -F 'TrayVoha/1.5.0' linux/trayvoha.py >/dev/null
+          grep -F 'Version:        1.5.0' packaging/rpm/trayvoha.spec >/dev/null
+
+          if git grep -n -E 'AlertTray|NeptunTray|Tryvoha' -- ':!README.md'; then
+            echo 'ПОМИЛКА: знайдено legacy product identifier' >&2
+            exit 1
+          fi
+
+          rm .github/workflows/version-normalize-once.yml
+
+          git add -A
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'release: align TrayVoha version to 1.5.0'
+          git push
