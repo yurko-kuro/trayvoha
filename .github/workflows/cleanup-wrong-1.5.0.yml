@@ -1,0 +1,30 @@
+name: TrayVoha — прибрати помилковий v1.5.0
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Прибрати помилковий реліз
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Дочекатися v1.5.0 і видалити його
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 180); do
+            if gh release view v1.5.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release delete v1.5.0 --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+              echo 'Помилковий v1.5.0 видалено.'
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'v1.5.0 не з’явився; видаляти нічого.'
