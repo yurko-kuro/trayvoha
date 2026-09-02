@@ -8,6 +8,14 @@ app_dir="$output_dir/TrayVoha.app"
 contents="$app_dir/Contents"
 arm64_build="$script_dir/.build-universal-arm64"
 x86_64_build="$script_dir/.build-universal-x86_64"
+dmg_stage=""
+
+cleanup() {
+    if [ -n "$dmg_stage" ] && [ -d "$dmg_stage" ]; then
+        rm -rf -- "$dmg_stage"
+    fi
+}
+trap cleanup EXIT
 
 command -v swift >/dev/null 2>&1 || {
     echo "Для складання macOS-версії потрібен Swift toolchain." >&2
@@ -19,6 +27,14 @@ command -v plutil >/dev/null 2>&1 || {
 }
 command -v lipo >/dev/null 2>&1 || {
     echo "Для складання універсальної macOS-версії потрібен lipo." >&2
+    exit 1
+}
+command -v hdiutil >/dev/null 2>&1 || {
+    echo "Для створення macOS DMG потрібен hdiutil." >&2
+    exit 1
+}
+command -v ditto >/dev/null 2>&1 || {
+    echo "Для пакування macOS-версії потрібен ditto." >&2
     exit 1
 }
 
@@ -116,8 +132,25 @@ codesign --force --deep --sign - "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 
 mkdir -p "$output_dir"
-rm -f -- "$output_dir/TrayVoha-macOS.zip"
-ditto -c -k --sequesterRsrc --keepParent "$app_dir" "$output_dir/TrayVoha-macOS.zip"
-test -s "$output_dir/TrayVoha-macOS.zip"
+zip_path="$output_dir/TrayVoha-macOS.zip"
+dmg_path="$output_dir/TrayVoha-macOS.dmg"
+rm -f -- "$zip_path" "$dmg_path"
 
-shasum -a 256 "$output_dir/TrayVoha-macOS.zip"
+ditto -c -k --sequesterRsrc --keepParent "$app_dir" "$zip_path"
+test -s "$zip_path"
+
+dmg_stage="$(mktemp -d "${TMPDIR:-/tmp}/trayvoha-dmg.XXXXXX")"
+ditto "$app_dir" "$dmg_stage/TrayVoha.app"
+ln -s /Applications "$dmg_stage/Applications"
+
+hdiutil create \
+    -volname "TrayVoha" \
+    -srcfolder "$dmg_stage" \
+    -ov \
+    -format UDZO \
+    "$dmg_path" >/dev/null
+
+test -s "$dmg_path"
+hdiutil verify "$dmg_path" >/dev/null
+
+shasum -a 256 "$zip_path" "$dmg_path"
