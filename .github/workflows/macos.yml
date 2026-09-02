@@ -51,14 +51,14 @@ jobs:
             exit 1
           fi
 
-      - name: Зібрати Swift-код
+      - name: Перевірити Swift-код на поточній архітектурі
         shell: bash
         run: |
           set -euo pipefail
           swift --version
           swift build --package-path macos -c release
 
-      - name: Зібрати TrayVoha.app
+      - name: Зібрати універсальний TrayVoha.app
         shell: bash
         run: |
           set -euo pipefail
@@ -66,11 +66,17 @@ jobs:
 
           app="$PWD/dist-ci-macos/TrayVoha.app"
           zip="$PWD/dist-ci-macos/TrayVoha-macOS.zip"
+          binary="$app/Contents/MacOS/TrayVoha"
 
-          test -x "$app/Contents/MacOS/TrayVoha"
+          test -x "$binary"
           test -s "$app/Contents/Resources/districts.json"
           test -s "$app/Contents/Resources/trayvoha.icns"
           test -s "$zip"
+
+          architectures="$(lipo -archs "$binary")"
+          echo "Архітектури TrayVoha.app: $architectures"
+          case " $architectures " in *" arm64 "*) ;; *) exit 1 ;; esac
+          case " $architectures " in *" x86_64 "*) ;; *) exit 1 ;; esac
 
           test "$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")" = 'ua.yurkokuro.trayvoha'
           test "$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")" = '1.5.0'
