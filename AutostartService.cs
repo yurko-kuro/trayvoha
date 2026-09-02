@@ -5,13 +5,16 @@ namespace NeptunTray;
 internal static class AutostartService
 {
     private const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "AlertTray";
-    private const string LegacyValueName = "NeptunTray";
+    private const string ValueName = "TrayVoha";
+    private const string LegacyAlertTrayValueName = "AlertTray";
+    private const string LegacyNeptunTrayValueName = "NeptunTray";
 
     public static bool IsEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(RegistryPath, writable: false);
-        return HasValue(key, ValueName) || HasValue(key, LegacyValueName);
+        return HasValue(key, ValueName)
+            || HasValue(key, LegacyAlertTrayValueName)
+            || HasValue(key, LegacyNeptunTrayValueName);
     }
 
     public static void SetEnabled(bool enabled)
@@ -20,14 +23,16 @@ internal static class AutostartService
         if (!enabled)
         {
             key.DeleteValue(ValueName, throwOnMissingValue: false);
-            key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+            key.DeleteValue(LegacyAlertTrayValueName, throwOnMissingValue: false);
+            key.DeleteValue(LegacyNeptunTrayValueName, throwOnMissingValue: false);
             return;
         }
 
         var executablePath = Environment.ProcessPath
             ?? throw new InvalidOperationException("Не вдалося визначити шлях до програми.");
         key.SetValue(ValueName, $"\"{executablePath}\"");
-        key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+        key.DeleteValue(LegacyAlertTrayValueName, throwOnMissingValue: false);
+        key.DeleteValue(LegacyNeptunTrayValueName, throwOnMissingValue: false);
     }
 
     public static void RefreshPathIfEnabled()
