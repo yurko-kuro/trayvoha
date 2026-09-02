@@ -17,7 +17,7 @@
 ## Документація
 
 - [Короткий бриф](docs/BRIEF.md)
-- [Інструкція користувача](docs/USER_GUIDE.md)
+- [Інструкція користувача](docs/GUIDE.md)
 - [Технічна реалізація](docs/TECHNICAL.md)
 - [Модель безпеки](docs/SECURITY.md)
 - [Джерело даних NEPTUN](docs/NEPTUN.md)
