@@ -3,7 +3,7 @@ Version:        1.4.0
 Release:        1
 Summary:        Air-raid alerts in the system tray
 License:        LicenseRef-Proprietary
-URL:            https://github.com/yurko-kuro/tryvoha-desktop
+URL:            https://github.com/yurko-kuro/tryvoha
 BuildArch:      noarch
 
 %global appdir %{_prefix}/lib/tryvoha
@@ -34,6 +34,8 @@ install -m 0755 %{repo_root}/linux/tryvoha.py \
     %{buildroot}%{appdir}/tryvoha.py
 install -m 0644 %{repo_root}/linux/districts.json \
     %{buildroot}%{appdir}/districts.json
+install -m 0644 %{repo_root}/linux/tryvoha.svg \
+    %{buildroot}%{appdir}/tryvoha.svg
 install -m 0644 %{repo_root}/linux/tryvoha-normal.svg \
     %{buildroot}%{appdir}/tryvoha-normal.svg
 install -m 0644 %{repo_root}/linux/tryvoha-alert.svg \
@@ -45,14 +47,14 @@ install -m 0644 %{repo_root}/packaging/debian/tryvoha.desktop \
     %{buildroot}%{_datadir}/applications/tryvoha.desktop
 install -m 0644 %{repo_root}/packaging/debian/tryvoha-autostart.desktop \
     %{buildroot}%{_sysconfdir}/xdg/autostart/tryvoha.desktop
-install -m 0644 %{repo_root}/linux/tryvoha-normal.svg \
-    %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/tryvoha-normal.svg
+install -m 0644 %{repo_root}/linux/tryvoha.svg \
+    %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/tryvoha.svg
 
 %files
 %{_bindir}/tryvoha
 %{appdir}/
 %{_datadir}/applications/tryvoha.desktop
-%{_datadir}/icons/hicolor/scalable/apps/tryvoha-normal.svg
+%{_datadir}/icons/hicolor/scalable/apps/tryvoha.svg
 %config(noreplace) %{_sysconfdir}/xdg/autostart/tryvoha.desktop
 
 %changelog
