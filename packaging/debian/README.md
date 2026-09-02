@@ -1,4 +1,4 @@
-# Debian-пакет
+# Debian-пакет TrayVoha
 
 Збірка пакета для Ubuntu та Debian:
 
@@ -6,20 +6,20 @@
 ./packaging/debian/build-deb.sh
 ```
 
-Результат: `dist/tryvoha-desktop_1.4.0_all.deb`.
+Результат: `dist/trayvoha_1.4.0_all.deb`.
 
 Встановлення:
 
 ```bash
-sudo apt install ./tryvoha-desktop_1.4.0_all.deb
+sudo apt install ./trayvoha_1.4.0_all.deb
 ```
 
-Пакет встановлює застосунок системно, додає його до меню та вмикає автозапуск для графічних сесій. Користувач може вимкнути або знову ввімкнути автозапуск у меню значка «Тривога».
+Пакет встановлює TrayVoha системно, додає його до меню та вмикає автозапуск для графічних сесій. Користувач може вимкнути або знову ввімкнути автозапуск у меню TrayVoha.
 
 Видалення:
 
 ```bash
-sudo apt remove tryvoha-desktop
+sudo apt remove trayvoha
 ```
 
-Налаштування користувачів у `~/.config/tryvoha` під час видалення пакета не видаляються.
+Налаштування користувачів у `~/.config/trayvoha` під час видалення пакета не видаляються.
