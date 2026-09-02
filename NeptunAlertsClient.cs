@@ -10,7 +10,11 @@ internal sealed class NeptunAlertsClient : IDisposable
 
     public NeptunAlertsClient()
     {
-        _httpClient = new HttpClient
+        var handler = new HttpClientHandler
+        {
+            AllowAutoRedirect = false,
+        };
+        _httpClient = new HttpClient(handler, disposeHandler: true)
         {
             Timeout = TimeSpan.FromSeconds(8),
         };
