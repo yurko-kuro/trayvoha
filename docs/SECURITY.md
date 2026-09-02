@@ -4,23 +4,19 @@
 
 ## Межа довіри
 
-TrayVoha локально перевіряє вибрані користувачем території за даними зовнішнього джерела NEPTUN.
-
 `TrayVoha <── HTTPS ──> NEPTUN`
 
 Єдиний дозволений зовнішній runtime endpoint:
 
 `https://neptun.in.ua/api/v1/alerts`
 
-HTTP redirects заборонені. Розмір відповіді обмежений до 1 MiB на всіх реалізаціях.
+HTTP redirects заборонені. Розмір відповіді обмежений до 1 MiB. Вибрані території фільтруються локально і не передаються в HTTP-запиті.
 
 Детальніше про джерело: [NEPTUN](NEPTUN.md).
 
 ## Геолокація та приватність
 
-**Доступ до геолокації: ПОВИНЕН БУТИ ВІДСУТНІЙ.**
-
-TrayVoha не використовує і не повинен використовувати:
+TrayVoha не використовує:
 
 - системні Location/GPS API;
 - запити дозволу на геолокацію;
@@ -28,41 +24,32 @@ TrayVoha не використовує і не повинен використо
 - IP-geolocation;
 - позиціонування через Wi-Fi або Bluetooth;
 - browser-mediated geolocation;
-- автоматичне визначення території за місцем перебування.
+- автоматичне визначення території.
 
-Території вибираються вручну та зберігаються локально. Область або район не додаються до URL чи тіла HTTP-запиту.
-
-NEPTUN бачить звичайні мережеві метадані HTTPS-з'єднання: публічну IP-адресу, TLS/HTTP metadata та User-Agent TrayVoha.
+NEPTUN отримує лише звичайні мережеві метадані HTTPS-з'єднання: публічну IP-адресу, TLS/HTTP metadata та User-Agent TrayVoha.
 
 ## Мережеві інваріанти
 
-Windows CI виконує live runtime-аудит і перевіряє, що застосунок:
+На всіх платформах перевіряються:
 
-- встановлює вихідне TCP-з'єднання лише на порт 443;
-- підключається до адрес, отриманих для `neptun.in.ua`;
-- не відкриває TCP listener;
-- не відкриває UDP endpoint;
-- не запускає дочірні процеси під час runtime-аудиту.
+- фіксований HTTPS endpoint;
+- заборона HTTP redirects;
+- bounded response до 1 MiB;
+- відсутність browser/location механізмів.
+
+Windows CI додатково виконує live runtime-аудит і перевіряє:
+
+- вихідні TCP-з'єднання лише на порт 443;
+- підключення лише до адрес `neptun.in.ua`;
+- відсутність TCP listener;
+- відсутність UDP endpoint;
+- відсутність дочірніх процесів під час runtime-аудиту.
 
 Успішний аудит фіксує:
 
 `NetworkInvariant=ONLY_NEPTUN_443`
 
 `AuditResult=PASS`
-
-Для Windows, Linux і macOS CI також перевіряє фіксований endpoint, заборону redirects та bounded response.
-
-## Browser та виконання коду
-
-Runtime не повинен:
-
-- відкривати браузер або зовнішні вебсторінки;
-- завантажувати та виконувати код;
-- мати runtime plugin/update механізм із завантаженням executable content;
-- створювати service, driver або firewall rule;
-- відкривати inbound network listener.
-
-Дані NEPTUN обробляються як JSON-дані, а не як код.
 
 ## Локальні дані
 
@@ -78,19 +65,21 @@ macOS:
 
 `~/Library/Application Support/TrayVoha/settings.json`
 
-Налаштування не повинні містити паролів, API-токенів або інших secrets. Вибрані території є локальними privacy-relevant settings.
+Налаштування не містять паролів, API-токенів або облікових даних.
 
 ## Автозапуск
 
-- Windows: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `TrayVoha`; installer сам його не створює.
-- Linux: стандартний XDG autostart.
-- macOS: штатний `SMAppService`.
+- Windows: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`;
+- Linux: XDG Autostart;
+- macOS: `SMAppService`.
 
-Автозапуск вмикається лише дією користувача.
+Автозапуск вмикається дією користувача.
 
-## Windows installer
+## Пакування
 
-CI виконує реальну тиху установку та видалення installer-а і перевіряє SHA256 установленого payload, uninstall registration, Start Menu shortcut, відсутність installer-created autostart та збереження користувацьких даних.
+### Windows
+
+Self-contained single-file `TrayVoha.exe` та Inno Setup installer. CI виконує реальну install/uninstall перевірку і звіряє встановлений payload.
 
 Успішний аудит фіксує:
 
@@ -98,31 +87,48 @@ CI виконує реальну тиху установку та видален
 
 `AuditResult=PASS`
 
-## Підпис і репутація
+### Linux
 
-Поточні Windows CI-артефакти не мають довіреного Authenticode-підпису. Це може викликати SmartScreen-попередження.
+CI збирає Debian `.deb`, RPM `.rpm` та portable ZIP і перевіряє runtime/package invariants.
 
-macOS CI збирає `.app` і може використовувати ad-hoc signature для перевірки цілісності збірки, але це не замінює Apple Developer ID signing і notarization для публічного production release.
+### macOS
 
-## Залежність від джерела даних
+CI збирає universal `TrayVoha.app` для `arm64` і `x86_64`, ZIP та DMG.
+
+Перевіряються:
+
+- обидві архітектури через `lipo`;
+- цілісність `.app` через `codesign --verify`;
+- цілісність DMG через `hdiutil verify`;
+- реальне монтування DMG;
+- наявність `TrayVoha.app`;
+- посилання `Applications -> /Applications`;
+- universal binary усередині змонтованого DMG.
+
+DMG не містить installer scripts, auto-install механізмів або обходу Gatekeeper.
+
+## Підпис
+
+Поточні Windows CI-артефакти не мають production Authenticode-підпису.
+
+macOS CI використовує ad-hoc signature для перевірки цілісності. Для production-розповсюдження потрібні Apple Developer ID signing і notarization.
+
+## Виконання коду
+
+Runtime не повинен:
+
+- відкривати browser або зовнішні вебсторінки;
+- завантажувати та виконувати код;
+- мати runtime plugin/update механізм із executable content;
+- створювати service, driver або firewall rule;
+- відкривати inbound network listener.
+
+Дані NEPTUN обробляються як JSON-дані, а не як код.
+
+## Залежність від джерела
 
 Помилка, недоступність або компрометація NEPTUN може призвести до неправильного, відсутнього або застарілого відображення стану тривоги.
 
-TrayVoha є допоміжним засобом і не повинен вважатися заміною офіційних каналів оповіщення.
+TrayVoha є допоміжним засобом і не замінює офіційні канали оповіщення.
 
-## CI security invariants
-
-Поточний CI перевіряє щонайменше:
-
-- canonical product identity TrayVoha;
-- відсутність browser/location механізмів;
-- фіксований runtime endpoint;
-- заборону HTTP redirects;
-- bounded NEPTUN response;
-- Windows build з warnings-as-errors;
-- live Windows network invariant;
-- Windows installer install/uninstall invariant;
-- Linux package builds;
-- macOS Swift/AppKit build та platform security invariants.
-
-Security-документ описує поточну реалізацію і не замінює повторний аудит після змін мережевого коду, persistence, installer/package logic або platform permissions.
+Технічний склад платформи та використані системні механізми описані в [TECHNICAL.md](TECHNICAL.md).
