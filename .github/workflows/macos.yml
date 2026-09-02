@@ -58,7 +58,7 @@ jobs:
           swift --version
           swift build --package-path macos -c release
 
-      - name: Зібрати універсальний TrayVoha.app
+      - name: Зібрати універсальний TrayVoha.app, ZIP і DMG
         shell: bash
         run: |
           set -euo pipefail
@@ -66,12 +66,14 @@ jobs:
 
           app="$PWD/dist-ci-macos/TrayVoha.app"
           zip="$PWD/dist-ci-macos/TrayVoha-macOS.zip"
+          dmg="$PWD/dist-ci-macos/TrayVoha-macOS.dmg"
           binary="$app/Contents/MacOS/TrayVoha"
 
           test -x "$binary"
           test -s "$app/Contents/Resources/districts.json"
           test -s "$app/Contents/Resources/trayvoha.icns"
           test -s "$zip"
+          test -s "$dmg"
 
           architectures="$(lipo -archs "$binary")"
           echo "Архітектури TrayVoha.app: $architectures"
@@ -88,12 +90,38 @@ jobs:
           fi
 
           codesign --verify --deep --strict "$app"
-          shasum -a 256 "$zip"
+          hdiutil verify "$dmg" >/dev/null
 
-      - name: Завантажити macOS-артефакт
+          mount_point="$RUNNER_TEMP/trayvoha-dmg"
+          rm -rf "$mount_point"
+          mkdir -p "$mount_point"
+          cleanup_dmg() {
+            hdiutil detach "$mount_point" -quiet >/dev/null 2>&1 || true
+          }
+          trap cleanup_dmg EXIT
+
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount_point" "$dmg" >/dev/null
+          test -d "$mount_point/TrayVoha.app"
+          test -L "$mount_point/Applications"
+          test "$(readlink "$mount_point/Applications")" = '/Applications'
+          codesign --verify --deep --strict "$mount_point/TrayVoha.app"
+
+          mounted_architectures="$(lipo -archs "$mount_point/TrayVoha.app/Contents/MacOS/TrayVoha")"
+          echo "Архітектури TrayVoha.app у DMG: $mounted_architectures"
+          case " $mounted_architectures " in *" arm64 "*) ;; *) exit 1 ;; esac
+          case " $mounted_architectures " in *" x86_64 "*) ;; *) exit 1 ;; esac
+
+          hdiutil detach "$mount_point" -quiet
+          trap - EXIT
+
+          shasum -a 256 "$zip" "$dmg"
+
+      - name: Завантажити macOS-артефакти
         uses: actions/upload-artifact@v4
         with:
           name: TrayVoha-macOS-ci
-          path: dist-ci-macos/TrayVoha-macOS.zip
+          path: |
+            dist-ci-macos/TrayVoha-macOS.zip
+            dist-ci-macos/TrayVoha-macOS.dmg
           if-no-files-found: error
           retention-days: 14
