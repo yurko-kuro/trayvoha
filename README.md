@@ -35,7 +35,8 @@
 - `TrayVoha-Linux.zip` — переносна Linux-версія;
 - `trayvoha_<version>_all.deb` — Ubuntu/Debian;
 - `trayvoha-<version>-1.noarch.rpm` — Fedora/RPM;
-- `TrayVoha-macOS.zip` — універсальна macOS-збірка для Apple Silicon та Intel.
+- `TrayVoha-macOS.dmg` — основний користувацький macOS-образ для встановлення через перетягування до `Applications`;
+- `TrayVoha-macOS.zip` — альтернативний архів із universal `TrayVoha.app` для Apple Silicon та Intel.
 
 ## Windows
 
@@ -68,7 +69,9 @@ chmod +x install.sh uninstall.sh
 
 macOS-версія є нативним menu-bar застосунком на Swift/AppKit і використовує системні механізми сповіщень, теми та автозапуску.
 
-CI окремо збирає `arm64` і `x86_64`, об'єднує їх у universal binary та перевіряє обидві архітектури через `lipo`. Один `TrayVoha-macOS.zip` призначений для Apple Silicon та Intel Mac з macOS 13 або новішою.
+CI окремо збирає `arm64` і `x86_64`, об'єднує їх у universal binary та перевіряє обидві архітектури через `lipo`. Один `TrayVoha.app` призначений для Apple Silicon та Intel Mac з macOS 13 або новішою.
+
+Для звичайного встановлення передбачений `TrayVoha-macOS.dmg`: користувач відкриває образ і перетягує `TrayVoha.app` до `Applications`. `TrayVoha-macOS.zip` залишається альтернативним способом отримати той самий застосунок без DMG.
 
 Поточна CI-збірка підписується ad-hoc для перевірки цілісності; production-розповсюдження потребує Developer ID signing і notarization.
 
