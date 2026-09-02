@@ -112,6 +112,7 @@ jobs:
           Write-Host "Installer SHA256: $((Get-FileHash $installer -Algorithm SHA256).Hash)"
 
       - name: Upload audited Windows artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: TrayVoha-Windows-ci
