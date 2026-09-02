@@ -85,12 +85,12 @@ jobs:
           grep -F 'TrayVoha/1.5.0' linux/trayvoha.py >/dev/null
           grep -F 'Version:        1.5.0' packaging/rpm/trayvoha.spec >/dev/null
 
+          rm .github/workflows/version-normalize-once.yml
+
           if git grep -n -E 'AlertTray|NeptunTray|Tryvoha'; then
             echo 'ПОМИЛКА: знайдено legacy product identifier' >&2
             exit 1
           fi
-
-          rm .github/workflows/version-normalize-once.yml
 
           git add -A
           git diff --cached --check
