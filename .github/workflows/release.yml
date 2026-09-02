@@ -219,15 +219,19 @@ jobs:
             exit 1
           fi
 
-      - name: Зібрати TrayVoha.app
+      - name: Зібрати TrayVoha.app, ZIP і DMG
         shell: bash
         run: |
           set -euo pipefail
-          swift build --package-path macos -c release
           ./macos/build-app.sh "$PWD/dist-release"
-          test -s "$PWD/dist-release/TrayVoha-macOS.zip"
-          codesign --verify --deep --strict "$PWD/dist-release/TrayVoha.app"
-          shasum -a 256 "$PWD/dist-release/TrayVoha-macOS.zip" > "$PWD/dist-release/SHA256SUMS-macOS.txt"
+          app="$PWD/dist-release/TrayVoha.app"
+          zip="$PWD/dist-release/TrayVoha-macOS.zip"
+          dmg="$PWD/dist-release/TrayVoha-macOS.dmg"
+          test -s "$zip"
+          test -s "$dmg"
+          codesign --verify --deep --strict "$app"
+          hdiutil verify "$dmg" >/dev/null
+          shasum -a 256 "$zip" "$dmg" > "$PWD/dist-release/SHA256SUMS-macOS.txt"
 
       - name: Завантажити macOS release-артефакти
         uses: actions/upload-artifact@v4
@@ -235,6 +239,7 @@ jobs:
           name: release-macos
           path: |
             dist-release/TrayVoha-macOS.zip
+            dist-release/TrayVoha-macOS.dmg
             dist-release/SHA256SUMS-macOS.txt
           if-no-files-found: error
           retention-days: 14
@@ -270,13 +275,15 @@ jobs:
           test -s trayvoha_1.5.0_all.deb
           test -s trayvoha-1.5.0-1.noarch.rpm
           test -s TrayVoha-macOS.zip
+          test -s TrayVoha-macOS.dmg
           sha256sum \
             TrayVoha-Windows.zip \
             TrayVoha-Setup-x64.exe \
             TrayVoha-Linux.zip \
             trayvoha_1.5.0_all.deb \
             trayvoha-1.5.0-1.noarch.rpm \
-            TrayVoha-macOS.zip | tee SHA256SUMS.txt
+            TrayVoha-macOS.zip \
+            TrayVoha-macOS.dmg | tee SHA256SUMS.txt
 
       - name: Створити лише draft release
         shell: bash
@@ -289,6 +296,7 @@ jobs:
             release-assets/trayvoha_1.5.0_all.deb \
             release-assets/trayvoha-1.5.0-1.noarch.rpm \
             release-assets/TrayVoha-macOS.zip \
+            release-assets/TrayVoha-macOS.dmg \
             release-assets/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
