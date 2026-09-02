@@ -35,17 +35,62 @@ function Get-RunValue {
 }
 
 function Get-UninstallEntry {
-    $roots = @(
-        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    $hives = @(
+        [Microsoft.Win32.RegistryHive]::LocalMachine,
+        [Microsoft.Win32.RegistryHive]::CurrentUser
     )
+    $views = @(
+        [Microsoft.Win32.RegistryView]::Registry64,
+        [Microsoft.Win32.RegistryView]::Registry32
+    )
+    $uninstallPath = 'Software\Microsoft\Windows\CurrentVersion\Uninstall'
 
-    foreach ($root in $roots) {
-        $match = Get-ItemProperty $root -ErrorAction SilentlyContinue |
-            Where-Object { $_.DisplayName -eq 'TrayVoha' } |
-            Select-Object -First 1
-        if ($match) {
-            return $match
+    foreach ($hive in $hives) {
+        foreach ($view in $views) {
+            $baseKey = $null
+            $uninstallKey = $null
+            try {
+                $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hive, $view)
+                $uninstallKey = $baseKey.OpenSubKey($uninstallPath)
+                if (-not $uninstallKey) {
+                    continue
+                }
+
+                foreach ($subKeyName in $uninstallKey.GetSubKeyNames()) {
+                    $subKey = $null
+                    try {
+                        $subKey = $uninstallKey.OpenSubKey($subKeyName)
+                        if (-not $subKey) {
+                            continue
+                        }
+
+                        $displayName = [string]$subKey.GetValue('DisplayName', '')
+                        if ($displayName -eq 'TrayVoha') {
+                            return [pscustomobject]@{
+                                Hive = [string]$hive
+                                View = [string]$view
+                                KeyName = $subKeyName
+                                DisplayName = $displayName
+                                DisplayVersion = [string]$subKey.GetValue('DisplayVersion', '')
+                                UninstallString = [string]$subKey.GetValue('UninstallString', '')
+                            }
+                        }
+                    }
+                    finally {
+                        if ($subKey) {
+                            $subKey.Dispose()
+                        }
+                    }
+                }
+            }
+            finally {
+                if ($uninstallKey) {
+                    $uninstallKey.Dispose()
+                }
+                if ($baseKey) {
+                    $baseKey.Dispose()
+                }
+            }
         }
     }
 
@@ -96,6 +141,9 @@ try {
     if (-not $entry) {
         throw 'Не знайдено uninstall entry для TrayVoha.'
     }
+    "UninstallHive=$($entry.Hive)" | Add-Content -Encoding utf8 $report
+    "UninstallView=$($entry.View)" | Add-Content -Encoding utf8 $report
+    "UninstallKeyName=$($entry.KeyName)" | Add-Content -Encoding utf8 $report
     "UninstallDisplayName=$($entry.DisplayName)" | Add-Content -Encoding utf8 $report
     "UninstallDisplayVersion=$($entry.DisplayVersion)" | Add-Content -Encoding utf8 $report
     "UninstallString=$($entry.UninstallString)" | Add-Content -Encoding utf8 $report
