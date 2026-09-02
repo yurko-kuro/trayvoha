@@ -435,6 +435,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
     private ManualStatusForm GetManualStatusForm()
     {
+        if (_manualStatusForm is not null && _manualStatusForm.IsDarkTheme != AppTheme.IsDark)
+        {
+            _manualStatusForm.Dispose();
+            _manualStatusForm = null;
+        }
+
         return _manualStatusForm ??= new ManualStatusForm();
     }
 
