@@ -28,6 +28,20 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Validate PowerShell audit syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path .\tools\windows-runtime-audit.ps1).Path,
+              [ref]$null,
+              [ref]$errors
+          )
+          if ($errors.Count -ne 0) {
+              $errors | Format-List | Out-String | Write-Host
+              throw 'PowerShell runtime audit містить синтаксичні помилки.'
+          }
+
       - name: Generate platform icons
         run: python tools/generate-icon-assets.py
 
