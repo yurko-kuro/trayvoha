@@ -53,29 +53,22 @@ internal static class SettingsStore
         WriteIndented = true,
     };
 
-    private static string AppDataDirectory =>
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-    private static string SettingsDirectory => Path.Combine(AppDataDirectory, "TrayVoha");
+    private static string SettingsDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "TrayVoha");
 
     private static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
-
-    private static string LegacySettingsPath => Path.Combine(AppDataDirectory, "NeptunTray", "settings.json");
 
     public static AppSettings Load()
     {
         try
         {
-            var sourcePath = File.Exists(SettingsPath)
-                ? SettingsPath
-                : LegacySettingsPath;
-
-            if (!File.Exists(sourcePath))
+            if (!File.Exists(SettingsPath))
             {
                 return CreateDefault();
             }
 
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(sourcePath))
+            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath))
                 ?? CreateDefault();
 
             if (settings.Version < CurrentVersion)
