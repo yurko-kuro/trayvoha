@@ -1,4 +1,4 @@
-# RPM-пакет
+# RPM-пакет TrayVoha
 
 Збірка пакета для Fedora:
 
@@ -10,15 +10,15 @@ sudo dnf install rpm-build
 Встановлення готового пакета:
 
 ```bash
-sudo dnf install ./tryvoha-desktop-1.4.0-1.noarch.rpm
+sudo dnf install ./trayvoha-1.4.0-1.noarch.rpm
 ```
 
-Пакет встановлює застосунок системно, додає його до меню та вмикає автозапуск для графічних сесій.
+Пакет встановлює TrayVoha системно, додає його до меню та вмикає автозапуск для графічних сесій.
 
 Видалення:
 
 ```bash
-sudo dnf remove tryvoha-desktop
+sudo dnf remove trayvoha
 ```
 
-Налаштування користувачів у `~/.config/tryvoha` під час видалення пакета не видаляються.
+Налаштування користувачів у `~/.config/trayvoha` під час видалення пакета не видаляються.
