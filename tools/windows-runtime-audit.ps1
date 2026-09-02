@@ -18,13 +18,17 @@ $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
 $signature = Get-AuthenticodeSignature $exe
 
 $neptunHost = 'neptun.in.ua'
-$neptunAddresses = @(
-    [System.Net.Dns]::GetHostAddresses($neptunHost) |
-        ForEach-Object { $_.ToString() } |
-        Sort-Object -Unique
-)
+$allowedAddresses = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-if ($neptunAddresses.Count -eq 0) {
+function Update-NeptunAddresses {
+    $addresses = [System.Net.Dns]::GetHostAddresses($neptunHost)
+    foreach ($address in $addresses) {
+        [void]$allowedAddresses.Add($address.ToString())
+    }
+}
+
+Update-NeptunAddresses
+if ($allowedAddresses.Count -eq 0) {
     throw 'Не вдалося отримати IP-адреси NEPTUN.'
 }
 
@@ -37,7 +41,6 @@ if ($neptunAddresses.Count -eq 0) {
     "SignatureStatus=$($signature.Status)"
     "Signer=$($signature.SignerCertificate.Subject)"
     "NeptunHost=$neptunHost"
-    "NeptunAddresses=$($neptunAddresses -join ',')"
 ) | Set-Content -Encoding utf8 $report
 
 if ($version.ProductName -ne 'TrayVoha') {
@@ -70,6 +73,10 @@ try {
             throw "TrayVoha завершився під час runtime-аудиту з кодом $($p.ExitCode)"
         }
 
+        if (($i % 10) -eq 0) {
+            Update-NeptunAddresses
+        }
+
         $sample = @(Get-NetTCPConnection -OwningProcess $p.Id -ErrorAction SilentlyContinue)
         foreach ($connection in $sample) {
             if ($connection.State -ne 'Listen') {
@@ -85,6 +92,7 @@ try {
     }
 
     "PID=$($p.Id)" | Add-Content -Encoding utf8 $report
+    "NeptunAddressesObserved=$(([string[]]$allowedAddresses | Sort-Object) -join ',')" | Add-Content -Encoding utf8 $report
 
     $children = @(Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $p.Id })
     "ChildProcessCount=$($children.Count)" | Add-Content -Encoding utf8 $report
@@ -129,7 +137,7 @@ try {
 
     $unexpected = @(
         $uniqueTcp | Where-Object {
-            $_.RemotePort -ne 443 -or $_.RemoteAddress -notin $neptunAddresses
+            $_.RemotePort -ne 443 -or -not $allowedAddresses.Contains($_.RemoteAddress)
         }
     )
 
@@ -143,6 +151,11 @@ try {
     }
 
     'NetworkInvariant=ONLY_NEPTUN_443' | Add-Content -Encoding utf8 $report
+}
+catch {
+    'AuditResult=FAIL' | Add-Content -Encoding utf8 $report
+    Get-Content $report | Write-Host
+    throw
 }
 finally {
     if (-not $p.HasExited) {
