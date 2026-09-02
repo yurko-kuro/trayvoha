@@ -1,5 +1,5 @@
 #define MyAppName "TrayVoha"
-#define MyAppVersion "1.5.0"
+#define MyAppVersion "1.0.0"
 #define MyAppExeName "TrayVoha.exe"
 
 [Setup]

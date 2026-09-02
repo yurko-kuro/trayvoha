@@ -1,6 +1,6 @@
-# TrayVoha 1.5.0
+# TrayVoha 1.0.0
 
-TrayVoha 1.5.0 — перший канонічний реліз TrayVoha з повним десктопним покриттям Windows, Linux і macOS.
+TrayVoha 1.0.0 — перший канонічний реліз TrayVoha з повним десктопним покриттям Windows, Linux і macOS.
 
 ## Основне
 
@@ -25,8 +25,8 @@ TrayVoha 1.5.0 — перший канонічний реліз TrayVoha з по
 ## Linux
 
 - переносний `TrayVoha-Linux.zip`;
-- `trayvoha_1.5.0_all.deb` для Ubuntu/Debian;
-- `trayvoha-1.5.0-1.noarch.rpm` для Fedora/RPM-сумісних систем;
+- `trayvoha_1.0.0_all.deb` для Ubuntu/Debian;
+- `trayvoha-1.0.0-1.noarch.rpm` для Fedora/RPM-сумісних систем;
 - GTK/AppIndicator та системна GTK-тема.
 
 ## macOS

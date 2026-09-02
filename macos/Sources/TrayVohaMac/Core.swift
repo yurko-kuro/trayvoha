@@ -1,6 +1,6 @@
 import Foundation
 
-let appVersion = "1.5.0"
+let appVersion = "1.0.0"
 let neptunEndpoint = URL(string: "https://neptun.in.ua/api/v1/alerts")!
 let maxResponseBytes = 1_048_576
 let pollInterval: TimeInterval = 10

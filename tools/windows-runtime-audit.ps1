@@ -46,7 +46,7 @@ if ($allowedAddresses.Count -eq 0) {
 if ($version.ProductName -ne 'TrayVoha') {
     throw "Неочікуваний ProductName: $($version.ProductName)"
 }
-if (-not $version.ProductVersion.StartsWith('1.5.0')) {
+if (-not $version.ProductVersion.StartsWith('1.0.0')) {
     throw "Неочікуваний ProductVersion: $($version.ProductVersion)"
 }
 

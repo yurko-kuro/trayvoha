@@ -1,6 +1,6 @@
 # Безпека TrayVoha
 
-Цей документ описує актуальну модель безпеки TrayVoha 1.5.0 для Windows, Linux і macOS.
+Цей документ описує актуальну модель безпеки TrayVoha 1.0.0 для Windows, Linux і macOS.
 
 ## Межа довіри
 

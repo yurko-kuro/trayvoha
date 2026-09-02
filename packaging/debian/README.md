@@ -6,12 +6,12 @@
 ./packaging/debian/build-deb.sh
 ```
 
-Результат: `dist/trayvoha_1.5.0_all.deb`.
+Результат: `dist/trayvoha_1.0.0_all.deb`.
 
 Встановлення:
 
 ```bash
-sudo apt install ./trayvoha_1.5.0_all.deb
+sudo apt install ./trayvoha_1.0.0_all.deb
 ```
 
 Пакет встановлює TrayVoha системно, додає його до меню та вмикає автозапуск для графічних сесій. Користувач може вимкнути або знову ввімкнути автозапуск у меню TrayVoha.

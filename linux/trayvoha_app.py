@@ -346,7 +346,7 @@ class TrayVohaApp:
 
     def _fetch_worker(self, selected: list[str], force: bool):
         try:
-            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "TrayVoha/1.5.0"})
+            request = urllib.request.Request(ALERTS_URL, headers={"User-Agent": "TrayVoha/1.0.0"})
             with urllib.request.urlopen(request, timeout=8) as response:
                 content_length = response.headers.get("Content-Length")
                 if content_length is not None and int(content_length) > MAX_RESPONSE_BYTES:

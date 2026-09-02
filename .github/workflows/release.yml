@@ -6,7 +6,7 @@ on:
       version:
         description: Версія релізу
         required: true
-        default: '1.5.0'
+        default: '1.0.0'
         type: string
 
 permissions:
@@ -20,18 +20,18 @@ jobs:
       - name: Отримати репозиторій
         uses: actions/checkout@v4
 
-      - name: Звірити версію 1.5.0
+      - name: Звірити версію 1.0.0
         shell: bash
         env:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          test "$VERSION" = '1.5.0'
-          grep -F '<Version>1.5.0</Version>' TrayVoha.csproj >/dev/null
-          grep -F '#define MyAppVersion "1.5.0"' packaging/windows/TrayVoha.iss >/dev/null
+          test "$VERSION" = '1.0.0'
+          grep -F '<Version>1.0.0</Version>' TrayVoha.csproj >/dev/null
+          grep -F '#define MyAppVersion "1.0.0"' packaging/windows/TrayVoha.iss >/dev/null
           grep -E '^Version:[[:space:]]+1\.5\.0$' packaging/rpm/trayvoha.spec >/dev/null
-          grep -F '<string>1.5.0</string>' macos/build-app.sh >/dev/null
-          grep -F '# TrayVoha 1.5.0' docs/RELEASE_NOTES_1.5.0.md >/dev/null
+          grep -F '<string>1.0.0</string>' macos/build-app.sh >/dev/null
+          grep -F '# TrayVoha 1.0.0' docs/RELEASE_NOTES_1.0.0.md >/dev/null
 
   windows:
     name: Зібрати й перевірити Windows
@@ -155,13 +155,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$PWD/dist-release"
-          ./packaging/debian/build-deb.sh 1.5.0 "$PWD/dist-release"
+          ./packaging/debian/build-deb.sh 1.0.0 "$PWD/dist-release"
           ./packaging/rpm/build-rpm.sh "$PWD/dist-release"
-          test -s "$PWD/dist-release/trayvoha_1.5.0_all.deb"
-          rpm_path="$(find "$PWD/dist-release" -type f -name 'trayvoha-1.5.0-1.noarch.rpm' -print -quit)"
+          test -s "$PWD/dist-release/trayvoha_1.0.0_all.deb"
+          rpm_path="$(find "$PWD/dist-release" -type f -name 'trayvoha-1.0.0-1.noarch.rpm' -print -quit)"
           test -n "$rpm_path"
           test -s "$rpm_path"
-          cp "$rpm_path" "$PWD/dist-release/trayvoha-1.5.0-1.noarch.rpm"
+          cp "$rpm_path" "$PWD/dist-release/trayvoha-1.0.0-1.noarch.rpm"
 
       - name: Зібрати переносний Linux ZIP
         shell: bash
@@ -183,7 +183,7 @@ jobs:
             zip -qr TrayVoha-Linux.zip TrayVoha-Linux
           )
           rm -rf "$portable"
-          sha256sum TrayVoha-Linux.zip trayvoha_1.5.0_all.deb trayvoha-1.5.0-1.noarch.rpm > SHA256SUMS-Linux.txt
+          sha256sum TrayVoha-Linux.zip trayvoha_1.0.0_all.deb trayvoha-1.0.0-1.noarch.rpm > SHA256SUMS-Linux.txt
 
       - name: Завантажити Linux release-артефакти
         uses: actions/upload-artifact@v4
@@ -191,8 +191,8 @@ jobs:
           name: release-linux
           path: |
             dist-release/TrayVoha-Linux.zip
-            dist-release/trayvoha_1.5.0_all.deb
-            dist-release/trayvoha-1.5.0-1.noarch.rpm
+            dist-release/trayvoha_1.0.0_all.deb
+            dist-release/trayvoha-1.0.0-1.noarch.rpm
             dist-release/SHA256SUMS-Linux.txt
           if-no-files-found: error
           retention-days: 14
@@ -272,16 +272,16 @@ jobs:
           test -s TrayVoha-Windows.zip
           test -s TrayVoha-Setup-x64.exe
           test -s TrayVoha-Linux.zip
-          test -s trayvoha_1.5.0_all.deb
-          test -s trayvoha-1.5.0-1.noarch.rpm
+          test -s trayvoha_1.0.0_all.deb
+          test -s trayvoha-1.0.0-1.noarch.rpm
           test -s TrayVoha-macOS.zip
           test -s TrayVoha-macOS.dmg
           sha256sum \
             TrayVoha-Windows.zip \
             TrayVoha-Setup-x64.exe \
             TrayVoha-Linux.zip \
-            trayvoha_1.5.0_all.deb \
-            trayvoha-1.5.0-1.noarch.rpm \
+            trayvoha_1.0.0_all.deb \
+            trayvoha-1.0.0-1.noarch.rpm \
             TrayVoha-macOS.zip \
             TrayVoha-macOS.dmg | tee SHA256SUMS.txt
 
@@ -293,13 +293,13 @@ jobs:
             release-assets/TrayVoha-Windows.zip \
             release-assets/TrayVoha-Setup-x64.exe \
             release-assets/TrayVoha-Linux.zip \
-            release-assets/trayvoha_1.5.0_all.deb \
-            release-assets/trayvoha-1.5.0-1.noarch.rpm \
+            release-assets/trayvoha_1.0.0_all.deb \
+            release-assets/trayvoha-1.0.0-1.noarch.rpm \
             release-assets/TrayVoha-macOS.zip \
             release-assets/TrayVoha-macOS.dmg \
             release-assets/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "TrayVoha v${VERSION}" \
-            --notes-file docs/RELEASE_NOTES_1.5.0.md \
+            --notes-file docs/RELEASE_NOTES_1.0.0.md \
             --draft

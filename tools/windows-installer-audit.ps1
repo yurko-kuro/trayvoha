@@ -67,7 +67,7 @@ function Get-UninstallEntry {
                         $displayName = [string]$subKey.GetValue('DisplayName', '')
                         $displayVersion = [string]$subKey.GetValue('DisplayVersion', '')
                         $nameMatches = $displayName -eq 'TrayVoha' -or $displayName.StartsWith('TrayVoha ', [System.StringComparison]::Ordinal)
-                        if ($nameMatches -and $displayVersion -eq '1.5.0') {
+                        if ($nameMatches -and $displayVersion -eq '1.0.0') {
                             return [pscustomobject]@{
                                 Hive = [string]$hive
                                 View = [string]$view
@@ -141,7 +141,7 @@ try {
 
     $entry = Get-UninstallEntry
     if (-not $entry) {
-        throw 'Не знайдено uninstall entry для TrayVoha 1.5.0.'
+        throw 'Не знайдено uninstall entry для TrayVoha 1.0.0.'
     }
     "UninstallHive=$($entry.Hive)" | Add-Content -Encoding utf8 $report
     "UninstallView=$($entry.View)" | Add-Content -Encoding utf8 $report

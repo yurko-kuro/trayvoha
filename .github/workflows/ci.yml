@@ -227,7 +227,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./packaging/debian/build-deb.sh 1.5.0 "$PWD/dist-ci"
-          test -s "$PWD/dist-ci/trayvoha_1.5.0_all.deb"
-          dpkg-deb --info "$PWD/dist-ci/trayvoha_1.5.0_all.deb" >/dev/null
-          dpkg-deb --contents "$PWD/dist-ci/trayvoha_1.5.0_all.deb" | grep -F './usr/lib/trayvoha/trayvoha_app.py' >/dev/null
+          ./packaging/debian/build-deb.sh 1.0.0 "$PWD/dist-ci"
+          test -s "$PWD/dist-ci/trayvoha_1.0.0_all.deb"
+          dpkg-deb --info "$PWD/dist-ci/trayvoha_1.0.0_all.deb" >/dev/null
+          dpkg-deb --contents "$PWD/dist-ci/trayvoha_1.0.0_all.deb" | grep -F './usr/lib/trayvoha/trayvoha_app.py' >/dev/null

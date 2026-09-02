@@ -81,7 +81,7 @@ jobs:
           case " $architectures " in *" x86_64 "*) ;; *) exit 1 ;; esac
 
           test "$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")" = 'ua.yurkokuro.trayvoha'
-          test "$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")" = '1.5.0'
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")" = '1.0.0'
           test "$(plutil -extract LSUIElement raw -o - "$app/Contents/Info.plist")" = 'true'
 
           if plutil -p "$app/Contents/Info.plist" | grep -E 'NSLocation|LocationUsage'; then
