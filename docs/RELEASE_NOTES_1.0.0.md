@@ -2,6 +2,8 @@
 
 TrayVoha 1.0.0 — перший канонічний реліз TrayVoha з повним десктопним покриттям Windows, Linux і macOS.
 
+Реліз публікується як **pre-release** для ознайомлення та ручного тестування.
+
 ## Основне
 
 - вибір областей і районів України вручну;
@@ -55,4 +57,4 @@ TrayVoha є допоміжним інформаційним застосунко
 
 ## Примітка щодо підпису
 
-Перед широким production-розповсюдженням рекомендовані Windows Authenticode signing, Apple Developer ID signing та notarization macOS-збірки.
+Поточні Windows-артефакти не мають production Authenticode-підпису. macOS-збірка має ad-hoc signature; для широкого production-розповсюдження потрібні Apple Developer ID signing та notarization.
