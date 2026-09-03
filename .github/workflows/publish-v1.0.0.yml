@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/publish-v1.0.0.yml
+      - .github/trigger-v1.0.0
 
 permissions:
   actions: write
@@ -97,5 +98,3 @@ jobs:
           test "$(jq -r '.isDraft' <<<"$json")" = 'false'
           test "$(jq -r '.isPrerelease' <<<"$json")" = 'true'
           jq . <<<"$json"
-
-# Повторний запуск після створення release-v1.0.0.
