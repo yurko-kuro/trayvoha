@@ -97,3 +97,5 @@ jobs:
           test "$(jq -r '.isDraft' <<<"$json")" = 'false'
           test "$(jq -r '.isPrerelease' <<<"$json")" = 'true'
           jq . <<<"$json"
+
+# Повторний запуск після створення release-v1.0.0.
