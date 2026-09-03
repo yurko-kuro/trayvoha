@@ -1,18 +1,12 @@
 # Релізи TrayVoha
 
-## Поточний релізний цикл
+## Поточний реліз
 
-Поточна версія у вихідному коді: **1.0.0**.
+Поточна версія: **1.0.0**.
 
-Версія 1.0.0 готується як перший канонічний реліз під назвою **TrayVoha** з повним покриттям трьох десктопних платформ:
+TrayVoha 1.0.0 — перший публічний реліз під канонічною назвою **TrayVoha** для Windows, Linux і macOS. Реліз публікується як **pre-release** для ознайомлення та ручного тестування.
 
-- Windows;
-- Linux;
-- macOS.
-
-Публікація релізу виконується лише після зелених CI-перевірок відповідного release checkpoint і ручної перевірки зібраних артефактів.
-
-## Канонічні артефакти 1.0.0
+## Артефакти 1.0.0
 
 ### Windows
 
@@ -27,19 +21,11 @@
 
 ### macOS
 
-- `TrayVoha-macOS.dmg` — основний користувацький образ із `TrayVoha.app` та посиланням на `/Applications` для звичайного drag-to-Applications встановлення;
-- `TrayVoha-macOS.zip` — альтернативний архів із тим самим universal `TrayVoha.app` для `arm64` і `x86_64`, macOS 13+.
-
-CI збирає архітектури окремо, об'єднує їх через `lipo` та перевіряє наявність обох slices у фінальному виконуваному файлі. DMG окремо проходить `hdiutil verify`, монтується в CI, після чого перевіряються `TrayVoha.app`, посилання `Applications`, code signature та обидві архітектури всередині змонтованого образу.
-
-Поточна macOS-збірка має ad-hoc code signature для перевірки цілісності bundle у CI. Для широкого production-розповсюдження потрібні Apple Developer ID signing і notarization.
+- `TrayVoha-macOS.dmg` — образ із `TrayVoha.app` та посиланням на `/Applications`;
+- `TrayVoha-macOS.zip` — universal `TrayVoha.app` для `arm64` і `x86_64`, macOS 13+.
 
 ## Що входить до 1.0.0
 
-- канонічне ім'я продукту TrayVoha;
-- Windows, Linux і macOS;
-- universal macOS binary для Apple Silicon та Intel;
-- macOS DMG із drag-to-Applications встановленням;
 - ручний вибір областей і районів;
 - локальне зберігання вибору;
 - автоматична перевірка стану приблизно раз на 10 секунд;
@@ -49,25 +35,13 @@ CI збирає архітектури окремо, об'єднує їх чер
 - фіксований NEPTUN endpoint;
 - заборонені HTTP redirects;
 - обмеження response body до 1 MiB;
-- відсутність геолокації, телеметрії та browser-mediated location;
-- Windows live network audit і installer install/uninstall audit;
-- окремий macOS CI на Apple runner;
-- окремий CI для Debian, RPM і переносного Linux ZIP.
+- відсутність геолокації та телеметрії;
+- Windows runtime network audit та installer install/uninstall audit;
+- Debian, RPM і portable Linux packages;
+- universal macOS binary `arm64 + x86_64`, ZIP та DMG.
 
-## Історичний v1.4.0
+## Distribution
 
-Опублікований `v1.4.0` залишається історичним legacy-релізом. Він створений до завершення переходу на канонічне ім'я TrayVoha та використовує попередню схему назв продукту й артефактів.
+Поточні Windows-артефакти не мають production Authenticode-підпису. macOS-збірка має ad-hoc signature для перевірки цілісності; для широкого production-розповсюдження потрібні Apple Developer ID signing і notarization.
 
-Його не слід використовувати як шаблон назв або пакування для нових релізів. Нові релізи використовують лише канонічні назви, наведені вище.
-
-## Незакриті distribution-пункти
-
-Перед широкою публікацією 1.0.0 потрібно окремо підтвердити:
-
-- Windows Authenticode signing для EXE та installer-а;
-- Apple Developer ID signing і notarization для macOS;
-- остаточний формат атрибуції NEPTUN відповідно до чинних умов API;
-- ручний smoke-test встановлення/запуску на реальних Windows, Ubuntu/Fedora та macOS;
-- фінальні скриншоти для `GUIDE.md`.
-
-Відсутність цих distribution-пунктів не означає помилку runtime-коду, але вони мають бути явно враховані перед широким розповсюдженням.
+Перед широким розповсюдженням також потрібні завершені ручні smoke-тести на цільових системах та фінальні скриншоти для `GUIDE.md`.
