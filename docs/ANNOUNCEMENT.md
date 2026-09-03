@@ -24,4 +24,4 @@ TrayVoha — кросплатформний застосунок для опер
 Проєкт:
 
 - Відкритий вихідний код
-- Вихідний код, документація та збірки: https://github.com/yurko-kuro/tryvoha
+- Вихідний код, документація та збірки: https://github.com/yurko-kuro/trayvoha
