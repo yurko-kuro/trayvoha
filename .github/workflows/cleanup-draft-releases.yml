@@ -1,0 +1,39 @@
+name: TrayVoha — прибрати чернетки релізів
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cleanup-draft-releases.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Видалити зайві draft-релізи
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Видалити всі draft-релізи
+        shell: bash
+        run: |
+          set -euo pipefail
+          ids="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.draft == true) | .id')"
+          for id in $ids; do
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
+          done
+
+      - name: Перевірити результат
+        shell: bash
+        run: |
+          set -euo pipefail
+          remaining_drafts="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.draft == true)] | length' | awk '{s+=$1} END {print s+0}')"
+          test "$remaining_drafts" = "0"
+
+          published="$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.draft == false and .tag_name == "v1.0.0")] | length' | awk '{s+=$1} END {print s+0}')"
+          test "$published" = "1"
+
+          gh release view v1.0.0 --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease,url
